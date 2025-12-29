@@ -18,3 +18,6 @@ service/api-scan/venv/
 .vscode/
 .idea/
 .env
+
+# Local notes
+git-note.md
