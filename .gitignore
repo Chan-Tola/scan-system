@@ -1,0 +1,25 @@
+# Laravel specific
+service/api-staff-management/vendor/
+service/api-staff-management/.env
+service/api-staff-management/storage/*.key
+service/api-staff-management/public/storage
+service/api-staff-management/public/hot
+service/api-staff-management/public/build
+service/api-staff-management/node_modules/
+service/api-staff-management/frankenphp*
+
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE/OS specific
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

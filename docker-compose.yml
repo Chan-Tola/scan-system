@@ -1,0 +1,115 @@
+version: "3.9"
+
+services:
+  # -------------------
+  # Postgres (Database)
+  # -------------------
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: attendance_db
+      POSTGRES_USER: useradmin
+      POSTGRES_PASSWORD: useradminpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - attendance_network
+
+  # -------------------
+  # Redis (Session Store)
+  # -------------------
+  redis:
+    image: redis:7-alpine
+    container_name: redis_db
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - attendance_network
+
+  # -------------------
+  # API Gateway Service
+  # -------------------
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    env_file:
+      - ./api-gateway/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - postgres
+      - api-scan
+    networks:
+      - attendance_network
+    restart: unless-stopped
+
+  # -------------------
+  # API Scan Service
+  # -------------------
+  api-scan:
+    build:
+      context: ./service/api-scan
+    container_name: api-scan
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: attendance_db
+      POSTGRES_USER: useradmin
+      POSTGRES_PASSWORD: useradminpassword
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - attendance_network
+    restart: unless-stopped
+  # -------------------
+  # API Scan Service
+  # -------------------
+  api-staff-management:
+    build:
+      context: ./service/api-staff-management
+    container_name: api-staff-management
+    restart: unless-stopped
+    ports:
+      - "8002:80"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=attendance_db
+      - DB_USERNAME=useradmin
+      - DB_PASSWORD=useradminpassword
+      - REDIS_HOST=redis
+    volumes:
+      - ./service/api-staff-management:/var/www/html
+    networks:
+      - attendance_network
+    depends_on:
+      - postgres
+      - redis
+  # -------------------
+  # Volumes
+  # -------------------
+volumes:
+  postgres_data:
+  redis_data:
+
+# -------------------
+# Network
+# -------------------
+networks:
+  attendance_network:
+    driver: bridge

@@ -1,0 +1,66 @@
+# ===== CORE FRAMEWORK =====
+fastapi==0.115.0
+uvicorn==0.30.0
+
+# ===== DATABASE =====
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.11
+alembic==1.13.1              # Database migrations
+asyncpg==0.29.0              # Async PostgreSQL driver (optional, for performance)
+
+# ===== CONFIGURATION & VALIDATION =====
+python-dotenv==1.0.1
+pydantic==2.9.0
+pydantic-settings==2.5.2
+email-validator==2.1.0      # For email validation in scans
+
+# ===== QR CODE GENERATION =====
+qrcode==7.4.2               # QR code generation
+Pillow==10.2.0              # Image processing for QR codes
+pyzbar==0.1.9               # QR code decoding (if scanning)
+opencv-python==4.9.0.80     # Computer vision (if camera scanning)
+
+# ===== HTTP CLIENT FOR LARAVEL API =====
+httpx==0.27.0
+aiohttp==3.9.3              # Alternative async HTTP client
+
+# ===== GEO LOCATION & IP =====
+geoip2==4.8.0               # IP to location mapping
+maxminddb==2.6.1            # MaxMind DB reader
+requests==2.31.0            # For IP API services
+
+# ===== SECURITY & AUTH =====
+python-jose[cryptography]==3.3.0  # JWT for API communication
+cryptography==42.0.5               # Encryption
+passlib[bcrypt]==1.7.4             # Password hashing
+
+# ===== CACHING =====
+redis==5.0.4                # For caching QR codes and sessions
+aioredis==2.0.1             # Async Redis client
+
+# ===== SCHEDULING & TASKS =====
+celery==5.3.6               # Background tasks (cleanup, reports)
+flower==2.0.1               # Celery monitoring (optional)
+
+# ===== FILE HANDLING =====
+python-multipart==0.0.6     # File uploads (if QR code images)
+cloudinary==1.41.0          # Cloud storage for QR images
+
+# ===== WEBSOCKETS (REAL-TIME UPDATES) =====
+websockets==12.0            # Real-time notifications
+python-socketio==5.10.0     # Socket.IO support
+
+# ===== LOGGING & MONITORING =====
+structlog==24.2.0           # Structured logging
+prometheus-fastapi-instrumentator==7.1.0  # Metrics
+sentry-sdk==1.40.6          # Error tracking
+
+# ===== PERFORMANCE =====
+orjson==3.10.3              # Fast JSON
+uvloop==0.19.0              # Fast event loop (Linux only)
+httptools==0.6.1            # HTTP parsing
+
+# ===== TESTING =====
+pytest==7.4.4
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
