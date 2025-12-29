@@ -1,25 +1,20 @@
-# Laravel specific
+# Root gitignore
 service/api-staff-management/vendor/
 service/api-staff-management/.env
 service/api-staff-management/storage/*.key
 service/api-staff-management/public/storage
-service/api-staff-management/public/hot
-service/api-staff-management/public/build
 service/api-staff-management/node_modules/
 service/api-staff-management/frankenphp*
+service/api-staff-management/database/database.sqlite
 
-# Python specific
-__pycache__/
-*.py[cod]
-*$py.class
-.env
-.venv
-env/
-venv/
-ENV/
+api-gateway/.env
+api-gateway/__pycache__/
+api-gateway/venv/
 
-# IDE/OS specific
+service/api-scan/.env
+service/api-scan/__pycache__/
+service/api-scan/venv/
+
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
+.env
