@@ -18,3 +18,9 @@ service/api-scan/venv/
 .vscode/
 .idea/
 .env
+
+node_modules/
+.prettier-caches
+.cache/
+scan-system-dashboard/node_modules/
+scan-system-dashboard/dist/
