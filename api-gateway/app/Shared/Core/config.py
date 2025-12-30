@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -8,6 +9,13 @@ class Settings(BaseSettings):
     #Redis Configuration
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+
+    # 7 Days in seconds
+    SESSION_EXPIRY: int = 604800
+    
+    @property
+    def public_staff_verify_url(self) -> str:
+        return f"{self.API_STAFF_URL}/api/internal/verify-credentials"
 
     class Config:
         env_file = ".env"
