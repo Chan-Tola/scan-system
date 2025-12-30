@@ -37,6 +37,14 @@ git commit -m "Describe your new feature changes"
 git push
 
 
+pull main to branch
+1. git checkout "name branch"
+#  example git checkout feature/auth-system
+2. git pull origin main
+3. git push origin "name branch"
+#  example git push origin feature/auth-system ( push to github )
+
+
 
 To safely merge your work into the main branch and update GitHub, follow these steps:
 
