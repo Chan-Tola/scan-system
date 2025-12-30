@@ -11,9 +11,5 @@ docker exec -it postgres_db psql -U useradmin -d attendance_db -c "\dt"
 docker exec attendance_postgres psql -U admindbps -d attendance_db -c "\d table_name"
 # example docker exec attendance_postgres psql -U admindbps -d attendance_db -c "\d users"
 
-
-
-
-
-
-
+Select All Data from a Table
+# exmplae  docker exec -it postgres_db psql -U useradmin -d attendance_db -c "SELECT * FROM users;"
