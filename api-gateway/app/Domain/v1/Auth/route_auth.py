@@ -3,6 +3,7 @@ from fastapi import APIRouter, Response, HTTPException, status, Request
 from app.Shared.Core.session_store import (
     create_session,
     delete_session,
+    get_session_data,
     SESSION_COOKIE_NAME
 )
 from app.Shared.Core.config import settings
@@ -40,8 +41,8 @@ async def login(payload: dict, response: Response):
     user_data = auth_resp.json()
     user_id = str(user_data.get("id"))
 
-    # Create the Session in Redis
-    session_id = create_session(user_id)
+    # Create the Session in Redis (store full user data)
+    session_id = create_session(user_id, user_data)
 
     # Set the Cookie with Sliding Expiration (7 days)
     response.set_cookie(
@@ -53,6 +54,43 @@ async def login(payload: dict, response: Response):
         secure=False # Set to True in Production (HTTPS)    
     )
 
+    return {
+        "status": "success",
+        "user": user_data
+    }
+
+@router.get("/me")
+async def get_current_user(request: Request):
+    """
+    Get current authenticated user from session.
+    - Validates session cookie.
+    - Returns user data if session is valid.
+    - Returns 401 if session is invalid or expired.
+    """
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    
+    if not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No session cookie"
+        )
+    
+    # Validate session in Redis and get user data
+    session_data = get_session_data(session_id)
+    if not session_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired"
+        )
+    
+    # Extract user data from session
+    user_data = session_data.get("user")
+    if not user_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User data not found in session"
+        )
+    
     return {
         "status": "success",
         "user": user_data

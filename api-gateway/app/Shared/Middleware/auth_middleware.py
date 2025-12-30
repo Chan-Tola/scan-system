@@ -6,9 +6,9 @@ from app.Shared.Core.config import settings
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # 1. Skip auth for login, logout, docs, and root
-        # Note: If your login route is /auth/login, add it here
-        if request.url.path in ["/auth/login", "/auth/logout", "/staff/login", "/", "/docs", "/openapi.json"]:
+        # 1. Skip auth for login, logout, me, docs, and root
+        # Note: /auth/me validates its own session
+        if request.url.path in ["/auth/login", "/auth/logout", "/auth/me", "/staff/login", "/", "/docs", "/openapi.json"]:
             return await call_next(request)
 
         # 2. Extract Session ID from Cookie
@@ -17,9 +17,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return Response(content="Unauthorized: No Session Cookie", status_code=401)
         
         # 3. Validate in Redis
-        user_id = get_session_data(session_id)
-        if not user_id:
+        session_data = get_session_data(session_id)
+        if not session_data:
             return Response(content="Unauthorized: Session Expired", status_code=401)
+
+        # Extract user_id (handle both old format string and new format dict)
+        user_id = session_data if isinstance(session_data, str) else session_data.get("user_id")
+        if not user_id:
+            return Response(content="Unauthorized: Invalid Session", status_code=401)
 
         # Attach user_id to request state so other routes can see WHO is logged in
         request.state.user_id = user_id
