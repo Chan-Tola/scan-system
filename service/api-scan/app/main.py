@@ -3,8 +3,12 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.Shared.Infra.database import get_db  # ✅ Fixed
+from app.Domain.v1.Offices.Routes.route_office import router as office_router
 
 app = FastAPI(title="API Scan Service")
+
+# Include routers
+app.include_router(office_router)
 
 @app.get("/")
 async def root():

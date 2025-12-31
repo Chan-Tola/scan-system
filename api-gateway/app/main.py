@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # 1. Import the routers from your new DDD paths
 from app.Domain.v1.Auth.route_auth import router as auth_router
 from app.Domain.v1.Scan.route_scan import router as scan_router
-from app.Domain.v1.Staff.route_staff import router as staff_router 
+from app.Domain.v1.Staff.route_staff import router as staff_router
+from app.Domain.v1.Offices.route_office import router as office_router
 from app.Shared.Infra.reverse_proxy import proxy_handler, proxy_handler_staff
 from app.Shared.Middleware.auth_middleware import AuthMiddleware
 
@@ -29,7 +30,8 @@ app.add_middleware(AuthMiddleware)
 # 3. Include the routers correctly
 app.include_router(auth_router) # Handles /auth/login
 app.include_router(scan_router) # Handles /scan
-app.include_router(staff_router) # Handles /staff
+app.include_router(staff_router) # Handles /
+app.include_router(office_router) # Handles /api/offices
 
 @app.get("/")
 async def health_check():
