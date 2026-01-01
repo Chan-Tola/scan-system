@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { useRouter } from 'vue-router'
 
 export function useAuth() {

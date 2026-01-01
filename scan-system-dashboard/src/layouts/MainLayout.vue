@@ -1,10 +1,9 @@
 <script setup lang="ts">
-// Main layout for authenticated pages
+import Sidebar from './Sidebar.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-background">
+  <Sidebar>
     <slot />
-  </div>
+  </Sidebar>
 </template>
-
