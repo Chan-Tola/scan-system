@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.Domain.v1.Offices.Models.office_model import Office
 from app.Domain.v1.Offices.Schemas.office_schema import OfficeCreate, OfficeUpdate
+from app.Domain.v1.QR_codes.Models.qr_model import QRCode
 
 class OfficeService:
     """Service layer for office business logic"""
@@ -27,7 +28,7 @@ class OfficeService:
     @staticmethod
     def create_office(db: Session, office_data: OfficeCreate) -> Office:
         """ Create a new office """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         new_office = Office(**office_data.model_dump())
         new_office.created_at = now
         new_office.updated_at = now
@@ -46,7 +47,7 @@ class OfficeService:
             setattr(db_office, key, value)
 
         # Set updated_at timestamp
-        db_office.updated_at = datetime.utcnow()
+        db_office.updated_at = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(db_office)
@@ -54,9 +55,24 @@ class OfficeService:
     
     @staticmethod
     def delete_office(db: Session, office_id: int) -> None:
-        """ Delete an office by ID """
+        """ Delete an office by ID and all associated QR codes """
         db_office = OfficeService.get_office_by_id(db, office_id)
+        
+        # First, delete all associated QR codes
+        qr_codes = db.query(QRCode).filter(QRCode.office_id == office_id).all()
+        for qr_code in qr_codes:
+            db.delete(qr_code)
+        
+        # Then delete the office
         db.delete(db_office)
-        db.commit()
+        
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete office: {str(e)}"
+            )
         return None
 
