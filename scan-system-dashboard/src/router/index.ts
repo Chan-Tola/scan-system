@@ -25,6 +25,12 @@ const router = createRouter({
       name: 'office',
       component: () => import('@/views/OfficeView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true }
+    },
+    {
+      path: '/qr-generate',
+      name: 'qr-generate',
+      component: () => import('@/views/QrGenerateView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true }
     }
   ],
 })

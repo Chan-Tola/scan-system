@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import LogoCompany from '@/assets/images/logo-company.jpg'
 
 const { handleLogin, isLoading, error: apiError } = useAuth()
 
@@ -30,12 +31,12 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <template>
-  <div class="animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div class="animate-in  fade-in slide-in-from-bottom-4 duration-700">
     <div class="flex flex-col items-center space-y-4 mb-8">
       <div
-        class="flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-lg ring-4 ring-white dark:ring-slate-900"
+        class="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg ring-4 ring-white dark:bg-slate-800 dark:ring-slate-900"
       >
-        <ShieldCheck class="h-10 w-10 text-primary-foreground" />
+        <img :src="LogoCompany" alt="Company Logo" class="h-12 w-12 object-contain" />
       </div>
 
       <div class="text-center">
