@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime,Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.Shared.Infra.database import Base
@@ -10,6 +10,8 @@ class Office(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     public_ip = Column(String, nullable=True)
+    shift_start = Column(Time, nullable=False)
+    shift_end = Column(Time, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

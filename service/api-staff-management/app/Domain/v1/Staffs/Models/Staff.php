@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Domain\v1\Staffs\Models;
+
 use Illuminate\Database\Eloquent\Model;
 use App\Domain\v1\Users\Models\User;
 use App\Domain\v1\Offices\Models\Office;
@@ -37,6 +38,22 @@ class Staff extends Model
         self::SHIFT_END,
         self::PROFILE_IMAGE,
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($staff) {
+            //  If shift time are not provided, set it to the office shift time
+            if (empty($staff->shift_start) || empty($staff->shift_end)) {
+                $office = Office::find($staff->office_id);
+                if ($office && $office->shift_start && $office->shift_end) {
+                    $staff->shift_start = $staff->shift_start ?? $office->shift_start;
+                    $staff->shift_end = $staff->shift_end ?? $office->shift_end;
+                }
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {

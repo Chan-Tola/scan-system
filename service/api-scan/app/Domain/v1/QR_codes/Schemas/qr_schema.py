@@ -8,7 +8,6 @@ class OfficeInfo(BaseModel):
     id: int
     name: str
     public_ip: Optional[str] = None
-    
     model_config = ConfigDict(from_attributes=True)
 
 # Request Schema (for creating QR codes)

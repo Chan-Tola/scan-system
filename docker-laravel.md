@@ -23,7 +23,7 @@ make:command:    Create a new Artisan command
 make:seeder:     Create a new seeder class
 make:controller: Create a new controller class
 make:request:    Create a new form request class
-
+docker-compose exec api-staff-management php artisan optimize:clear
 
 
 

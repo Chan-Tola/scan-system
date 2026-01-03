@@ -45,6 +45,8 @@ const refreshData = async () => {
         :title="office.name"
         :office-id="office.id"
         :public-ip="office.public_ip"
+        :shift-start="office.shift_start"
+        :shift-end="office.shift_end"
         @delete="refreshData"
         @updated="refreshData"
       />
