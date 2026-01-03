@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useQrGenerate } from '@/features/qr-generate'
 import { useOffice } from '@/features/office'
 import OfficeDirectory from '@/features/qr-generate/components/officeDirectory.vue'
@@ -35,7 +35,7 @@ onMounted(async () => {
   await loadQRCodes({ is_active: true })
 })
 
-// Handle office selection (automatically loads QR code if exists)
+// Handle office selection
 const handleOfficeSelect = async (officeId: number) => {
   await selectOffice(officeId)
 }
@@ -47,9 +47,7 @@ const handleGenerate = async () => {
     return
   }
 
-  // If QR code exists, regenerate it; otherwise generate new one
   if (currentQRCode.value && hasQRCodeForSelectedOffice.value) {
-    // Regenerate - the store will update currentQRCode with the new token from backend
     await handleRegenerateQRCode(currentQRCode.value.id)
   } else {
     await handleGenerateQRCode(selectedOfficeId.value)
@@ -60,7 +58,6 @@ const handleGenerate = async () => {
 const refreshData = async () => {
   await loadOffices()
   await loadQRCodes({ is_active: true })
-  // Reload QR code for selected office if exists
   if (selectedOfficeId.value) {
     await selectOffice(selectedOfficeId.value)
   }
@@ -68,54 +65,97 @@ const refreshData = async () => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:h-full lg:min-h-0">
-    <!-- OFFICE DIRECTORY -->
-    <OfficeDirectory
-      :offices="filteredOffices"
-      :selected-office-id="selectedOfficeId"
-      :is-loading="officesLoading || qrLoading"
-      :search-query="searchQuery"
-      :has-qr-code="hasQRCodeForSelectedOffice"
-      @select-office="handleOfficeSelect"
-      @generate="handleGenerate"
-      @update:search-query="searchQuery = $event"
-    />
+  <!-- Remove fixed height and allow natural scrolling -->
+  <div class="bg-slate-50">
+    <!-- Page container with proper padding -->
+    <div class="max-w-screen-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <!-- Page header -->
+      <div class="mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">QR Code Generator</h1>
+        <p class="mt-2 text-sm text-gray-600">
+          Generate and manage QR codes for your office locations
+        </p>
+      </div>
 
-    <!-- LIVE PREVIEW -->
-    <LivePreview
-      :qr-code="currentQRCode"
-      :is-loading="qrLoading"
-      :error="qrError"
-      @refresh="refreshData"
-    />
-  </div>
-  <!-- <div class="bg-slate-50 sm:p-4 md:p-6 overflow-hidden flex flex-col font-sans">
-    <div
-      class="bg-white border border-slate-200 rounded-3xl shadow-sm flex-1 flex flex-col overflow-hidden"
-    >
+      <!-- Main content grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        <!-- Office Directory - Takes 5 columns on desktop -->
+        <div class="lg:col-span-5 xl:col-span-4">
+          <OfficeDirectory
+            :offices="filteredOffices"
+            :selected-office-id="selectedOfficeId"
+            :is-loading="officesLoading || qrLoading"
+            :search-query="searchQuery"
+            :has-qr-code="hasQRCodeForSelectedOffice"
+            @select-office="handleOfficeSelect"
+            @generate="handleGenerate"
+            @update:search-query="searchQuery = $event"
+          />
+        </div>
+
+        <!-- Live Preview - Takes 7 columns on desktop -->
+        <div class="lg:col-span-7 xl:col-span-8">
+          <LivePreview
+            :qr-code="currentQRCode"
+            :is-loading="qrLoading"
+            :error="qrError"
+            @refresh="refreshData"
+          />
+        </div>
+      </div>
+
+      <!-- Optional footer information -->
+      <!-- <div class="mt-12 pt-8 border-t border-gray-200">
+        <div class="text-center text-sm text-gray-500">
+          <p>Need help? Contact support at support@example.com</p>
+          <p class="mt-1">All QR codes are securely generated and encrypted</p>
+        </div>
+      </div> -->
     </div>
-  </div> -->
+  </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-:deep(*) {
-  font-family: 'Inter', sans-serif;
+/* Smooth scrolling for the entire page */
+:root {
+  scroll-behavior: smooth;
 }
 
-/* Custom Clean Scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* Custom scrollbar for the page */
+::-webkit-scrollbar {
+  width: 10px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+
+::-webkit-scrollbar-thumb {
   background: #cbd5e1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive spacing */
+@media (max-width: 1024px) {
+  .max-w-screen-2xl {
+    max-width: 100%;
+  }
+}
+
+/* Print styles */
+@media print {
+  .bg-slate-50 {
+    background-color: white !important;
+  }
+
+  .border,
+  .shadow-sm {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+  }
 }
 </style>

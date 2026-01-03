@@ -3,7 +3,9 @@ import Sidebar from './Sidebar.vue'
 </script>
 
 <template>
-  <Sidebar>
-    <slot />
-  </Sidebar>
+  <div class="bg-background text-foreground antialiased">
+    <Sidebar>
+      <slot />
+    </Sidebar>
+  </div>
 </template>

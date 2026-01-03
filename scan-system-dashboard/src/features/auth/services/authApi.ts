@@ -1,8 +1,12 @@
 import axios from 'axios'
 import type { AuthResponse } from '../types'
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true, // CRUCIAL: This allows cookies to be sent/received
+  // headers: {
+  //   // This header tells ngrok to skip the warning page
+  //   'ngrok-skip-browser-warning': 'true',
+  // },
 })
 export const authApi = {
   // Matches your endpoint: /auth/login

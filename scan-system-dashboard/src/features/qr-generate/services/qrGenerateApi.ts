@@ -1,8 +1,12 @@
 import axios from 'axios'
 import type { QRCodeResponse, GenerateQRCodeResponse, GenerateQRCodeRequest } from '../types/index'
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
+  // headers: {
+  //   // This header tells ngrok to skip the warning page
+  //   'ngrok-skip-browser-warning': 'true',
+  // },
 })
 
 export const qrGenerateApi = {
@@ -14,7 +18,9 @@ export const qrGenerateApi = {
 
   // Regenerate QR Code token and image
   regenerateQRCode: async (qrCodeId: number): Promise<GenerateQRCodeResponse> => {
-    const response = await api.post<GenerateQRCodeResponse>(`/api/generate-code/${qrCodeId}/regenerate`)
+    const response = await api.post<GenerateQRCodeResponse>(
+      `/api/generate-code/${qrCodeId}/regenerate`,
+    )
     return response.data
   },
 

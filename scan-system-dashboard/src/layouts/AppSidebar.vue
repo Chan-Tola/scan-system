@@ -8,12 +8,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarGroupLabel,
+  SidebarGroupContent,
 } from '@/components/ui/sidebar'
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -30,8 +34,11 @@ import {
   LogOut,
   Settings,
   CreditCard,
+  ChevronRight,
+  Home,
 } from 'lucide-vue-next'
 import LogoCompany from '@/assets/images/logo-company.jpg'
+import { computed } from 'vue'
 
 // Authentication & Routing
 const { user, handleLogout } = useAuth()
@@ -39,11 +46,12 @@ const router = useRouter()
 const route = useRoute()
 
 // Menu items with their respective icons
-const items = [
+const mainItems = [
   {
     title: 'Dashboard',
     url: '/dashboard',
-    icon: LayoutDashboard,
+    icon: Home,
+    isActive: true,
   },
   {
     title: 'Generate QR',
@@ -55,8 +63,11 @@ const items = [
     url: '/scan-qr',
     icon: ScanLine,
   },
+]
+
+const managementItems = [
   {
-    title: 'Office',
+    title: 'Office Management',
     url: '/office',
     icon: Building2,
   },
@@ -76,73 +87,187 @@ const handleNavigation = (url: string) => {
 
 // Check if the current route matches the menu item
 const isActive = (url: string) => route.path === url
+
+// User initials for avatar
+const userInitials = computed(() => {
+  if (!user?.username) return 'U'
+  return user.username.charAt(0).toUpperCase()
+})
 </script>
 
 <template>
-  <Sidebar collapsible="icon" variant="inset" class="border-r border-slate-200 flex flex-col">
-    <SidebarHeader class="shrink-0">
-      <div class="flex items-center justify-center px-2 py-6">
+  <Sidebar
+    collapsible="icon"
+    variant="inset"
+    class="border-r bg-sidebar text-sidebar-foreground transition-all duration-300"
+  >
+    <!-- Logo Header -->
+    <SidebarHeader class="px-3 py-4 border-b">
+      <div class="flex items-center justify-center">
         <div
-          class="flex h-20 w-20 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100 overflow-hidden transition-all group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8"
+          class="flex h-12 w-12 items-center justify-center rounded-lg bg-white shadow-sm border overflow-hidden transition-all duration-300 group-data-[collapsible=icon]/sidebar:h-8 group-data-[collapsible=icon]/sidebar:w-8"
         >
-          <img :src="LogoCompany" alt="Company Logo" class="h-full w-full object-contain p-1" />
+          <img
+            :src="LogoCompany"
+            alt="Company Logo"
+            class="h-full w-full object-contain p-1.5 transition-transform duration-300 group-data-[collapsible=icon]/sidebar:scale-90"
+          />
+        </div>
+        <div
+          class="ml-3 overflow-hidden transition-all duration-300 group-data-[collapsible=icon]/sidebar:opacity-0 group-data-[collapsible=icon]/sidebar:w-0"
+        >
+          <h2 class="text-lg font-semibold truncate">Your Company</h2>
+          <p class="text-xs text-muted-foreground truncate">Premium Dashboard</p>
         </div>
       </div>
     </SidebarHeader>
 
-    <SidebarContent class="flex-1 min-h-0 overflow-y-auto">
+    <!-- Navigation Content -->
+    <SidebarContent class="flex-1 overflow-y-auto py-4">
+      <!-- Main Navigation -->
       <SidebarGroup>
-        <SidebarMenu>
-          <SidebarMenuItem v-for="item in items" :key="item.title">
-            <SidebarMenuButton
-              :tooltip="item.title"
-              :is-active="isActive(item.url)"
-              @click="handleNavigation(item.url)"
-              class="transition-colors hover:bg-slate-100"
-            >
-              <component :is="item.icon" class="size-4 shrink-0" />
-              <span class="font-medium text-sm">{{ item.title }}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem v-for="item in mainItems" :key="item.title">
+              <SidebarMenuButton
+                :tooltip="item.title"
+                :is-active="isActive(item.url)"
+                @click="handleNavigation(item.url)"
+                class="group relative px-3 py-2.5 my-0.5 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <component
+                  :is="item.icon"
+                  class="size-4 shrink-0 transition-transform group-hover:scale-110"
+                />
+                <span class="ml-3 font-medium text-sm truncate transition-all duration-200">
+                  {{ item.title }}
+                </span>
+                <ChevronRight
+                  class="ml-auto size-3 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0"
+                />
+                <span
+                  v-if="isActive(item.url)"
+                  class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary"
+                />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <!-- Management Section -->
+      <SidebarGroup class="mt-6">
+        <SidebarGroupLabel
+          class="px-3 text-xs font-semibold uppercase text-muted-foreground tracking-wider"
+        >
+          Management
+        </SidebarGroupLabel>
+        <SidebarGroupContent class="mt-2">
+          <SidebarMenu>
+            <SidebarMenuItem v-for="item in managementItems" :key="item.title">
+              <SidebarMenuButton
+                :tooltip="item.title"
+                :is-active="isActive(item.url)"
+                @click="handleNavigation(item.url)"
+                class="group relative px-3 py-2.5 my-0.5 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <component
+                  :is="item.icon"
+                  class="size-4 shrink-0 transition-transform group-hover:scale-110"
+                />
+                <span class="ml-3 font-medium text-sm truncate transition-all duration-200">
+                  {{ item.title }}
+                </span>
+                <ChevronRight
+                  class="ml-auto size-3 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0"
+                />
+                <span
+                  v-if="isActive(item.url)"
+                  class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary"
+                />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
       </SidebarGroup>
     </SidebarContent>
 
-    <SidebarFooter class="shrink-0 pb-4 mt-auto border-t border-slate-200 bg-sidebar">
+    <!-- User Profile Footer -->
+    <SidebarFooter class="p-3 border-t">
       <SidebarMenu>
         <SidebarMenuItem v-if="user">
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <SidebarMenuButton
-                class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                class="w-full px-3 py-2.5 rounded-lg hover:bg-sidebar-accent transition-colors duration-200 group"
               >
-                <div
-                  class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white shrink-0"
-                >
-                  <User2 class="size-3" />
+                <div class="flex items-center w-full">
+                  <!-- Avatar -->
+                  <div class="relative">
+                    <div
+                      class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-white font-medium text-sm shrink-0 transition-transform group-hover:scale-105"
+                    >
+                      {{ userInitials }}
+                    </div>
+                    <div
+                      class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-sidebar bg-emerald-500"
+                    />
+                  </div>
+
+                  <!-- User Info -->
+                  <div
+                    class="ml-3 flex-1 overflow-hidden text-left transition-all duration-300 group-data-[collapsible=icon]/sidebar:opacity-0 group-data-[collapsible=icon]/sidebar:w-0"
+                  >
+                    <p class="text-sm font-semibold truncate">{{ user.username }}</p>
+                    <p class="text-xs text-muted-foreground truncate">Administrator</p>
+                  </div>
+
+                  <!-- Chevron -->
+                  <ChevronUp
+                    class="ml-auto size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
+                  />
                 </div>
-                <span class="truncate font-semibold">{{ user.username }}</span>
-                <ChevronUp class="ml-auto size-4 text-slate-400" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
               side="top"
-              align="start"
-              class="w-[--radix-popper-anchor-width] mb-2 p-1"
+              align="end"
+              class="w-56 p-2 rounded-lg shadow-lg border bg-popover"
             >
-              <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+              <DropdownMenuLabel class="p-2">
+                <div class="flex items-center gap-2">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <User2 class="size-4 text-primary" />
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-semibold">{{ user.username }}</span>
+                    <span class="text-xs text-muted-foreground">admin@example.com</span>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+
+              <DropdownMenuSeparator class="my-2" />
+
+              <DropdownMenuItem
+                class="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent"
+              >
                 <Settings class="size-4" />
                 <span>Account Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+
+              <DropdownMenuItem
+                class="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent"
+              >
                 <CreditCard class="size-4" />
                 <span>Billing</span>
               </DropdownMenuItem>
-              <div class="my-1 h-px bg-slate-100" />
+
+              <DropdownMenuSeparator class="my-2" />
+
               <DropdownMenuItem
                 @click="handleLogout"
-                class="flex items-center gap-2 cursor-pointer text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                class="flex items-center gap-2 p-2 rounded-md cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
               >
                 <LogOut class="size-4" />
                 <span>Sign out</span>
@@ -156,83 +281,41 @@ const isActive = (url: string) => route.path === url
 </template>
 
 <style scoped>
-/* Ensure the sidebar menu buttons transition smoothly when the sidebar collapses */
-span {
-  transition: opacity 0.2s ease-in-out;
-}
-
-/* Ensure sidebar container uses flex layout and full height */
-:deep([data-sidebar="sidebar"]) {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
-}
-
-/* Ensure content area can scroll independently */
-:deep([data-sidebar="content"]) {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+/* Custom scrollbar for sidebar */
+:deep([data-sidebar='content']) {
   scrollbar-width: thin;
-  scrollbar-color: rgb(203 213 225) transparent;
+  scrollbar-color: hsl(var(--muted)) transparent;
 }
 
-:deep([data-sidebar="content"])::-webkit-scrollbar {
-  width: 6px;
+:deep([data-sidebar='content'])::-webkit-scrollbar {
+  width: 4px;
 }
 
-:deep([data-sidebar="content"])::-webkit-scrollbar-track {
+:deep([data-sidebar='content'])::-webkit-scrollbar-track {
   background: transparent;
 }
 
-:deep([data-sidebar="content"])::-webkit-scrollbar-thumb {
-  background-color: rgb(203 213 225);
-  border-radius: 3px;
+:deep([data-sidebar='content'])::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted));
+  border-radius: 20px;
 }
 
-:deep([data-sidebar="content"])::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(148 163 184);
+/* Sidebar collapse animation */
+:deep([data-sidebar='sidebar']) {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Ensure footer stays fixed at bottom */
-:deep([data-sidebar="footer"]) {
-  flex-shrink: 0;
-  margin-top: auto;
-  position: sticky;
-  bottom: 0;
-  background-color: hsl(var(--sidebar-background));
-  z-index: 10;
-}
-
-/* Mobile responsive adjustments */
-@media (max-width: 1024px) {
-  :deep([data-sidebar="sidebar"]) {
-    height: 100vh;
-    max-height: 100vh;
-  }
-}
-
-/* Tablet and smaller screens */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  :deep([data-sidebar="sidebar"]) {
+  :deep([data-sidebar='sidebar']) {
+    position: fixed;
+    z-index: 50;
     height: 100vh;
-    max-height: 100vh;
-  }
-  
-  :deep([data-sidebar="footer"]) {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
   }
 }
 
-/* Small mobile screens */
-@media (max-width: 390px) {
-  :deep([data-sidebar="sidebar"]) {
-    height: 100vh;
-    max-height: 100vh;
-  }
+/* Smooth hover transitions */
+.sidebar-menu-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

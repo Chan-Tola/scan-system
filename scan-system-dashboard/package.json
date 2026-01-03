@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@shadcn/ui": "^0.0.4",
+    "@tanstack/vue-table": "^8.21.3",
     "@unovis/ts": "^1.6.2",
     "@unovis/vue": "^1.6.2",
     "@vee-validate/zod": "^4.15.1",

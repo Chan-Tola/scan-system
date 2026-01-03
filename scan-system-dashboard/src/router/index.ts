@@ -6,51 +6,57 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      redirect: '/login',
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
-      meta: { layout: 'AuthLayout', requiresGuest: true }
+      meta: { layout: 'AuthLayout', requiresGuest: true },
     },
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { layout: 'MainLayout', requiresAuth: true }
+      meta: { layout: 'MainLayout', requiresAuth: true },
     },
     {
       path: '/office',
       name: 'office',
       component: () => import('@/views/OfficeView.vue'),
-      meta: { layout: 'MainLayout', requiresAuth: true }
+      meta: { layout: 'MainLayout', requiresAuth: true },
     },
     {
       path: '/qr-generate',
       name: 'qr-generate',
       component: () => import('@/views/QrGenerateView.vue'),
-      meta: { layout: 'MainLayout', requiresAuth: true }
-    }
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
+    {
+      path: '/staff',
+      name: 'staff',
+      component: () => import('@/views/StaffView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
   ],
 })
 
 // Navigation guard to protect routes
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // If route requires auth and user is not authenticated
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
     return
   }
-  
+
   // If route requires guest (login page) and user is authenticated
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     next('/dashboard')
     return
   }
-  
+
   next()
 })
 
