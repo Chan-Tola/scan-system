@@ -31,7 +31,7 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <template>
-  <div class="animate-in  fade-in slide-in-from-bottom-4 duration-700">
+  <div class="animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div class="flex flex-col items-center space-y-4 mb-8">
       <div
         class="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg ring-4 ring-white dark:bg-slate-800 dark:ring-slate-900"

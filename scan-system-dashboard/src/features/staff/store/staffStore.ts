@@ -72,17 +72,27 @@ export const useStaffStore = defineStore('staff', () => {
       isLoading.value = false
     }
   }
-  // Update office
+  // Update staff
   async function updateStaff(id: number, staffData: StaffUpdate) {
     isLoading.value = true
     error.value = null
     try {
       const updatedStaff = await staffApi.updateStaff(id, staffData)
+
       // Update in local list
       const index = staffMembers.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         staffMembers.value[index] = updatedStaff
       }
+
+      // If updating current user's profile, refresh auth profile
+      // This ensures the cached profile in auth store is updated
+      const { useAuthStore } = await import('@/features/auth/store/authStore')
+      const authStore = useAuthStore()
+      if (authStore.user?.profile?.id === id) {
+        await authStore.refreshProfile()
+      }
+
       return { success: true, data: updatedStaff }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Failed to update staff'

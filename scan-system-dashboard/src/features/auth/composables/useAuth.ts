@@ -28,5 +28,6 @@ export function useAuth() {
     error,
     handleLogin,
     handleLogout,
+    refreshProfile: store.refreshProfile,
   }
 }

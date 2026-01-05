@@ -14,5 +14,5 @@ app.use(router)
 // Check authentication on app startup
 const authStore = useAuthStore()
 authStore.checkAuth().then(() => {
-app.mount('#app')
+  app.mount('#app')
 })

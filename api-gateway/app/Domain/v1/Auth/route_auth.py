@@ -14,44 +14,49 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def login(payload: dict, response: Response):
     """
     Gateway Login Bridge:
-    - Calls Laravel Octane to verify credentials.
-    - If OK, creates Redis session and sets 7-day cookie.
+    - Calls Laravel to verify credentials.
+    - If OK, catches the full profile immediately and stores in Redis.
+    - Achieves high performance by serving profile from cache later.
     """
     async with httpx.AsyncClient() as client:
         try:
-            # Uses the dynamic property from your config.py
+            # 1. Verify Credentials
             auth_resp = await client.post(
                 settings.public_staff_verify_url,
-                json= payload,
+                json=payload,
                 timeout=5.0
             )
-        except httpx.RequestError:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
-                detail="Staff Management Service (Laravel) is offline"
-            )
-    
-    if auth_resp.status_code != 208:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Invalid email or password"
-        )
-    
-    #  Get User Data from Laravel response
-    user_data = auth_resp.json()
-    user_id = str(user_data.get("id"))
+            
+            if auth_resp.status_code != 208:
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            basic_user = auth_resp.json()
+            user_id = str(basic_user.get("id"))
 
-    # Create the Session in Redis (store full user data)
+            # 2. Fetch Full Profile immediately (One-time cost at login)
+            profile_resp = await client.post(
+                settings.public_staff_me_url,
+                json={"user_id": user_id},
+                timeout=5.0
+            )
+            
+            user_data = basic_user
+            if profile_resp.status_code == 200:
+                user_data = profile_resp.json()
+
+        except httpx.RequestError:
+            raise HTTPException(status_code=503, detail="Staff service offline")
+
+    # 3. Store EVERYTHING in Redis (User + Profile)
     session_id = create_session(user_id, user_data)
 
-    # Set the Cookie with Sliding Expiration (7 days)
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=session_id,
-        httponly=True,   # Security: JavaScript cannot read this
+        httponly=True,
         max_age=settings.SESSION_EXPIRY,
         samesite="lax",
-        secure=False # Set to True in Production (HTTPS)    
+        secure=False
     )
 
     return {
@@ -62,40 +67,24 @@ async def login(payload: dict, response: Response):
 @router.get("/me")
 async def get_current_user(request: Request):
     """
-    Get current authenticated user from session.
-    - Validates session cookie.
-    - Returns user data if session is valid.
-    - Returns 401 if session is invalid or expired.
+    Ultra-Fast Me Endpoint:
+    - Zero external HTTP calls.
+    - Reads directly from local Redis session.
     """
     session_id = request.cookies.get(SESSION_COOKIE_NAME)
-    
     if not session_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No session cookie"
-        )
+        raise HTTPException(status_code=401, detail="No session")
     
-    # Validate session in Redis and get user data
     session_data = get_session_data(session_id)
     if not session_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session expired"
-        )
+        raise HTTPException(status_code=401, detail="Session expired")
     
-    # Extract user data from session
-    user_data = session_data.get("user")
-    if not user_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User data not found in session"
-        )
-    
+    # Session data found? Return immediately (Blazing fast!)
     return {
         "status": "success",
-        "user": user_data
+        "user": session_data.get("user")
     }
-
+    
 @router.post("/logout")
 async def logout(request: Request, response: Response):
     """

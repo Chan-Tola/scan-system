@@ -8,6 +8,9 @@ use App\Domain\v1\Staffs\Controllers\StaffController;
 Route::prefix('internal')->group(function () {
     // This matches: http://api-staff-management/api/internal/verify-credentials
     Route::post('/verify-credentials', [AuthController::class, 'verify']);
+
+    // Get authenticated user profile with full staff details
+    Route::post('/me', [AuthController::class, 'me']);
 });
 
 // Staff routes - will be handled by StaffController later

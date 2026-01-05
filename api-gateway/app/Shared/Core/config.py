@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     def public_staff_verify_url(self) -> str:
         return f"{self.API_STAFF_URL}/api/internal/verify-credentials"
 
+    @property
+    def public_staff_me_url(self) -> str:
+        return f"{self.API_STAFF_URL}/api/internal/me"
+
     class Config:
         env_file = ".env"
         case_sensitive = False
