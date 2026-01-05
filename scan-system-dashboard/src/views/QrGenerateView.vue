@@ -35,7 +35,7 @@ onMounted(async () => {
   await loadQRCodes({ is_active: true })
 })
 
-// Handle office selection
+// Handle office selection (automatically loads QR code if exists)
 const handleOfficeSelect = async (officeId: number) => {
   await selectOffice(officeId)
 }
@@ -47,7 +47,9 @@ const handleGenerate = async () => {
     return
   }
 
+  // If QR code exists, regenerate it; otherwise generate new one
   if (currentQRCode.value && hasQRCodeForSelectedOffice.value) {
+    // Regenerate - the store will update currentQRCode with the new token from backend
     await handleRegenerateQRCode(currentQRCode.value.id)
   } else {
     await handleGenerateQRCode(selectedOfficeId.value)
@@ -58,6 +60,7 @@ const handleGenerate = async () => {
 const refreshData = async () => {
   await loadOffices()
   await loadQRCodes({ is_active: true })
+  // Reload QR code for selected office if exists
   if (selectedOfficeId.value) {
     await selectOffice(selectedOfficeId.value)
   }
@@ -65,97 +68,67 @@ const refreshData = async () => {
 </script>
 
 <template>
-  <!-- Remove fixed height and allow natural scrolling -->
-  <div class="bg-slate-50">
-    <!-- Page container with proper padding -->
-    <div class="max-w-screen-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <!-- Page header -->
-      <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">QR Code Generator</h1>
-        <p class="mt-2 text-sm text-gray-600">
-          Generate and manage QR codes for your office locations
-        </p>
+  <!-- Fixed height container that fits within the layout without scrolling -->
+  <div
+    class="lg:h-[calc(100vh-8rem)] overflow-hidden bg-white rounded-xl border border-slate-200 shadow-xl ring-1 ring-slate-900/5"
+  >
+    <!-- Grid layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 h-full gap-0">
+      <!-- OFFICE DIRECTORY -->
+      <div class="h-full">
+        <OfficeDirectory
+          :offices="filteredOffices"
+          :selected-office-id="selectedOfficeId"
+          :is-loading="officesLoading || qrLoading"
+          :search-query="searchQuery"
+          :has-qr-code="hasQRCodeForSelectedOffice"
+          @select-office="handleOfficeSelect"
+          @generate="handleGenerate"
+          @update:search-query="searchQuery = $event"
+        />
       </div>
 
-      <!-- Main content grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        <!-- Office Directory - Takes 5 columns on desktop -->
-        <div class="lg:col-span-5 xl:col-span-4">
-          <OfficeDirectory
-            :offices="filteredOffices"
-            :selected-office-id="selectedOfficeId"
-            :is-loading="officesLoading || qrLoading"
-            :search-query="searchQuery"
-            :has-qr-code="hasQRCodeForSelectedOffice"
-            @select-office="handleOfficeSelect"
-            @generate="handleGenerate"
-            @update:search-query="searchQuery = $event"
-          />
-        </div>
-
-        <!-- Live Preview - Takes 7 columns on desktop -->
-        <div class="lg:col-span-7 xl:col-span-8">
-          <LivePreview
-            :qr-code="currentQRCode"
-            :is-loading="qrLoading"
-            :error="qrError"
-            @refresh="refreshData"
-          />
-        </div>
+      <!-- LIVE PREVIEW -->
+      <div class="h-full">
+        <LivePreview
+          :qr-code="currentQRCode"
+          :is-loading="qrLoading"
+          :error="qrError"
+          @refresh="refreshData"
+        />
       </div>
-
-      <!-- Optional footer information -->
-      <!-- <div class="mt-12 pt-8 border-t border-gray-200">
-        <div class="text-center text-sm text-gray-500">
-          <p>Need help? Contact support at support@example.com</p>
-          <p class="mt-1">All QR codes are securely generated and encrypted</p>
-        </div>
-      </div> -->
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Smooth scrolling for the entire page */
-:root {
-  scroll-behavior: smooth;
+/* Custom scrollbar styling for the entire app */
+:deep(.custom-scrollbar)::-webkit-scrollbar {
+  width: 6px;
 }
-
-/* Custom scrollbar for the page */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
+:deep(.custom-scrollbar)::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
-
-::-webkit-scrollbar-thumb {
+:deep(.custom-scrollbar)::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 5px;
+  border-radius: 3px;
 }
-
-::-webkit-scrollbar-thumb:hover {
+:deep(.custom-scrollbar)::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Responsive spacing */
-@media (max-width: 1024px) {
-  .max-w-screen-2xl {
-    max-width: 100%;
-  }
-}
-
-/* Print styles */
-@media print {
-  .bg-slate-50 {
-    background-color: white !important;
+/* Mobile: Stack components vertically and allow vertical scrolling */
+@media (max-width: 1023px) {
+  .grid {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
 
-  .border,
-  .shadow-sm {
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: none !important;
+  .h-full {
+    height: auto;
+    min-height: 50vh;
   }
 }
 </style>

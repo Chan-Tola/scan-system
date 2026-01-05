@@ -20,7 +20,7 @@ class CreateStaffRequest extends FormRequest
             // User Fields
             User::USERNAME => 'required|string|max:255|unique:users,username',
             User::EMAIL => 'required|email|max:255|unique:users,email',
-            User::PASSWORD => 'required|string|min:8|confirmed',
+            User::PASSWORD => 'required|string|min:8',
             'role' => 'required|string|exists:roles,name',
 
             // Staff fields
@@ -33,7 +33,7 @@ class CreateStaffRequest extends FormRequest
             Staff::JOIN_DATE => 'nullable|date',
             Staff::SHIFT_START => 'nullable|date_format:H:i:s',
             Staff::SHIFT_END => 'nullable|date_format:H:i:s|after:shift_start',
-            Staff::PROFILE_IMAGE => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // Changed to image type
+            Staff::PROFILE_IMAGE => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max
         ];
     }
 

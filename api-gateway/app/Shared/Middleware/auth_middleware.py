@@ -45,8 +45,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             value=session_id,
             httponly=True,  # SECURITY: Prevent XSS attacks
             max_age=settings.SESSION_EXPIRY,
-            samesite="lax",  # SECURITY: Prevent CSRF attacks
-            secure=False  # Set to True in production (HTTPS required)
+            # samesite="lax",  # SECURITY: Prevent CSRF attacks
+            # secure=False  # Set to True in production (HTTPS required)
+            samesite="none",   
+            secure=True,       # Must be True if samesite is "none"
+            path="/"
         )
         return response
     
@@ -61,9 +64,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         origin = request.headers.get("origin")
         allowed_origins = [
             "http://localhost:5173",
-            "http://localhost:3000",
             "http://127.0.0.1:5173",
-            "http://127.0.0.1:3000",
+            "https://unreconsidered-tiresomely-kimberlee.ngrok-free.dev",
         ]
         
         # Only add CORS headers if origin is in allowed list (security)

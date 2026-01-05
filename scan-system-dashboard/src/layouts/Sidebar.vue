@@ -25,14 +25,13 @@ import AppSidebar from './AppSidebar.vue'
     <SidebarInset class="flex min-h-screen flex-1 flex-col">
       <!-- Header -->
       <header
-        class="sticky top-0 z-40 flex h-14 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6"
+        class="sticky top-0 z-40 flex h-16 items-center gap-2 border-b bg-background/80 px-4 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/60 lg:px-6"
       >
         <div class="flex flex-1 items-center gap-2">
           <SidebarTrigger
-            class="-ml-1 size-9 rounded-md hover:bg-accent lg:hidden"
-            variant="ghost"
+            class="-ml-1 h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground lg:hidden"
           />
-          <Separator orientation="vertical" class="mr-2 h-4 lg:hidden" />
+          <Separator orientation="vertical" class="mr-2 h-4" />
 
           <Breadcrumb class="hidden sm:flex">
             <BreadcrumbList>
@@ -46,41 +45,33 @@ import AppSidebar from './AppSidebar.vue'
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage class="text-sm font-medium"> Data Fetching </BreadcrumbPage>
+                <BreadcrumbPage class="text-sm font-medium text-foreground">
+                  Data Fetching
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
 
-          <!-- Mobile title -->
-          <div class="sm:hidden">
-            <h1 class="text-base font-semibold">Dashboard</h1>
+          <!-- Mobile title with premium typography -->
+          <div class="flex-1 sm:hidden flex justify-center">
+            <h1 class="text-sm font-semibold tracking-tight">Dashboard</h1>
           </div>
+          <!-- Spacer to balance the center title on mobile if needed, or just let it flex -->
+          <div class="w-9 sm:hidden"></div>
         </div>
 
-        <!-- Optional: Add header actions here -->
+        <!-- Header Actions -->
         <div class="flex items-center gap-2">
-          <!-- Place for notifications, search, etc. -->
+          <!-- Add Theme Toggle or Notifications here later -->
         </div>
       </header>
 
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto">
-        <div class="mx-auto w-full max-w-7xl p-4 md:p-6">
+        <div class="mx-auto w-full p-4">
           <slot />
         </div>
       </main>
-
-      <!-- Footer -->
-      <footer class="border-t py-3 px-6 text-center text-xs text-muted-foreground">
-        <div class="flex flex-col items-center justify-between gap-2 md:flex-row">
-          <span>© {{ new Date().getFullYear() }} Your Company. All rights reserved.</span>
-          <div class="flex items-center gap-4">
-            <a href="#" class="hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="#" class="hover:text-foreground transition-colors">Terms of Service</a>
-            <a href="#" class="hover:text-foreground transition-colors">Help</a>
-          </div>
-        </div>
-      </footer>
     </SidebarInset>
   </SidebarProvider>
 </template>

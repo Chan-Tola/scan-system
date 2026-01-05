@@ -12,6 +12,9 @@ class StaffService
     /**
      * Upload profile image to Cloudinary
      */
+    /**
+     * Upload profile image to Cloudinary
+     */
     public function uploadProfileImage(?UploadedFile $file): ?string
     {
         if (!$file) {
@@ -19,15 +22,16 @@ class StaffService
         }
 
         try {
-            // Upload to Cloudinary
-            $uploadedFileUrl = Cloudinary::upload($file->getRealPath(), [
+            // Upload to Cloudinary using Native SDK syntax
+            // The facade returns the SDK instance, so we call uploadApi()
+            $uploadedFile = Cloudinary::uploadApi()->upload($file->getRealPath(), [
                 'folder' => 'scan-staff-profiles',
                 'public_id' => 'staff_' . time() . '_' . uniqid(),
                 'overwrite' => true,
                 'resource_type' => 'image'
-            ])->getSecurePath();
+            ]);
 
-            return $uploadedFileUrl;
+            return $uploadedFile['secure_url']; 
         } catch (\Exception $e) {
             throw new \Exception('Failed to upload image to Cloudinary: ' . $e->getMessage());
         }
@@ -54,7 +58,7 @@ class StaffService
                 // Remove file extension
                 $publicId = pathinfo($publicId, PATHINFO_FILENAME);
 
-                Cloudinary::destroy($publicId);
+                Cloudinary::uploadApi()->destroy($publicId);
                 return true;
             }
 
@@ -67,26 +71,43 @@ class StaffService
     /**
      * Test Cloudinary connection
      */
+    /**
+     * Test Cloudinary connection
+     */
     public function testCloudinary(): array
     {
+        // Create a temporary file
+        $tempFile = sys_get_temp_dir() . '/test_image_' . time() . '.txt';
+        file_put_contents($tempFile, 'This is a test file for Cloudinary upload.');
+
         try {
-            // Try to upload a test file (you can create a simple test image)
-            $testResult = Cloudinary::upload(
-                base_path('public/favicon.ico'), // Using existing file as test
+            // Upload the temp file (as "raw" or "auto" since it's text, or pretend it's an image if we really want, but let's stick to auto for safety or just raw)
+            // Actually, for image resource type it implies image validation. 
+            // Let's make a tiny valid base64 image or just switch resource_type to 'raw' for this test.
+            // Or better, let's keep resource_type 'auto' to avoid "empty file" on image check.
+            
+            $testResult = Cloudinary::uploadApi()->upload(
+                $tempFile, 
                 [
                     'folder' => 'test',
                     'public_id' => 'test_' . time(),
-                    'resource_type' => 'image'
+                    'resource_type' => 'auto' 
                 ]
             );
+
+            // Clean up
+            @unlink($tempFile);
 
             return [
                 'status' => 'success',
                 'message' => 'Cloudinary connection successful',
-                'test_url' => $testResult->getSecurePath(),
-                'public_id' => $testResult->getPublicId()
+                'test_url' => $testResult['secure_url'],
+                'public_id' => $testResult['public_id']
             ];
         } catch (\Exception $e) {
+            // Clean up
+            @unlink($tempFile);
+            
             return [
                 'status' => 'error',
                 'message' => 'Cloudinary connection failed: ' . $e->getMessage()

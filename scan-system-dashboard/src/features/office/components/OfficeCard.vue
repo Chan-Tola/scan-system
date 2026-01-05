@@ -60,7 +60,7 @@ const formatTimeForDisplay = (time: string | undefined): string => {
 
   // Determine AM/PM
   const period = hours >= 12 ? 'PM' : 'AM'
-  
+
   // Convert to 12-hour format (0 -> 12, 13 -> 1, etc.)
   hours = hours % 12 || 12
 
@@ -77,23 +77,35 @@ const formatTimeForInput = (time: string | undefined): string => {
 </script>
 
 <template>
-  <Card class="bg-white hover:shadow-lg transition-shadow">
-    <CardHeader class="flex flex-row items-start justify-between border-b pb-4">
-      <div class="flex items-start gap-3 flex-1">
+  <Card
+    class="bg-white border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 group"
+  >
+    <CardHeader class="flex flex-row items-start justify-between border-b border-slate-100 pb-4">
+      <div class="flex items-start gap-4 flex-1">
         <div
-          class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-500 flex-shrink-0"
+          class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary flex-shrink-0"
         >
-          <component :is="icon" class="w-6 h-6" />
+          <component :is="icon" class="w-5 h-5" />
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-gray-900 text-base">{{ title }}</h3>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-slate-900 text-base truncate">{{ title }}</h3>
+          <div class="flex items-center gap-2 mt-1">
+            <span
+              class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+              >Active</span
+            >
+          </div>
         </div>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" size="icon" class="h-8 w-8">
-            <MoreVertical class="w-4 h-4 text-gray-400" />
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8 -mr-2 text-slate-400 hover:text-slate-600"
+          >
+            <MoreVertical class="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-[160px]">
@@ -110,18 +122,25 @@ const formatTimeForInput = (time: string | undefined): string => {
       </DropdownMenu>
     </CardHeader>
 
-    <CardContent class="pt-4">
-      <p v-if="publicIp" class="text-sm font-medium text-gray-600">
-        Public IP Address : {{ publicIp }}
-      </p>
-      <div v-if="shiftStart || shiftEnd" class="flex items-center gap-4 text-sm text-gray-600">
-        <div v-if="shiftStart" class="flex items-center gap-1">
-          <span class="font-medium">Shift Start:</span>
-          <span>{{ formatTimeForDisplay(shiftStart) }}</span>
-        </div>
-        <div v-if="shiftEnd" class="flex items-center gap-1">
-          <span class="font-medium">Shift End:</span>
-          <span>{{ formatTimeForDisplay(shiftEnd) }}</span>
+    <CardContent class="pt-4 grid gap-3">
+      <div v-if="publicIp" class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider"
+          >Public IP</span
+        >
+        <span
+          class="text-sm font-mono bg-slate-50 w-fit px-2 py-0.5 rounded text-slate-700 border border-slate-100"
+          >{{ publicIp }}</span
+        >
+      </div>
+
+      <div v-if="shiftStart || shiftEnd" class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider"
+          >Shift Hours</span
+        >
+        <div class="flex items-center gap-2 text-sm text-slate-700">
+          <span class="font-medium">{{ formatTimeForDisplay(shiftStart) }}</span>
+          <span class="text-muted-foreground">-</span>
+          <span class="font-medium">{{ formatTimeForDisplay(shiftEnd) }}</span>
         </div>
       </div>
     </CardContent>

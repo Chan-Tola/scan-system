@@ -129,31 +129,50 @@ const handleSave = async () => {
       </DialogHeader>
 
       <!-- Form -->
-      <div class="grid gap-4 py-4">
-        <div v-if="error" class="text-sm text-destructive">
+      <div class="grid gap-5 py-4">
+        <div v-if="error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {{ error }}
         </div>
 
         <div class="grid gap-2">
-          <Label>Office Name *</Label>
-          <Input v-model="officeName" :disabled="isLoading" />
+          <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >Office Name <span class="text-destructive">*</span></Label
+          >
+          <Input
+            v-model="officeName"
+            :disabled="isLoading"
+            placeholder="e.g. Headquarters, Branch A"
+            class="h-10"
+          />
         </div>
 
         <div class="grid gap-2">
-          <Label>Public IP Address</Label>
-          <Input v-model="publicIp" :disabled="isLoading" />
+          <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >Public IP Address</Label
+          >
+          <Input
+            v-model="publicIp"
+            :disabled="isLoading"
+            placeholder="e.g. 192.168.1.1"
+            class="h-10 font-mono text-sm"
+          />
+          <p class="text-[10px] text-muted-foreground">Used for validating scan requests.</p>
         </div>
 
         <!-- SHIFT FIELDS -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-4">
           <div class="grid gap-2">
-            <Label>Shift Start *</Label>
-            <Input type="time" v-model="shiftStart" :disabled="isLoading" />
+            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >Shift Start <span class="text-destructive">*</span></Label
+            >
+            <Input type="time" v-model="shiftStart" :disabled="isLoading" class="h-10" />
           </div>
 
           <div class="grid gap-2">
-            <Label>Shift End *</Label>
-            <Input type="time" v-model="shiftEnd" :disabled="isLoading" />
+            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >Shift End <span class="text-destructive">*</span></Label
+            >
+            <Input type="time" v-model="shiftEnd" :disabled="isLoading" class="h-10" />
           </div>
         </div>
       </div>

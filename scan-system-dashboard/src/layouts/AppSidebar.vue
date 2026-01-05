@@ -90,8 +90,8 @@ const isActive = (url: string) => route.path === url
 
 // User initials for avatar
 const userInitials = computed(() => {
-  if (!user?.username) return 'U'
-  return user.username.charAt(0).toUpperCase()
+  if (!user.value?.username) return 'U'
+  return user.value.username.charAt(0).toUpperCase()
 })
 </script>
 
@@ -103,21 +103,25 @@ const userInitials = computed(() => {
   >
     <!-- Logo Header -->
     <SidebarHeader class="px-3 py-4 border-b">
-      <div class="flex items-center justify-center">
+      <div class="flex items-center gap-2 px-1">
         <div
-          class="flex h-12 w-12 items-center justify-center rounded-lg bg-white shadow-sm border overflow-hidden transition-all duration-300 group-data-[collapsible=icon]/sidebar:h-8 group-data-[collapsible=icon]/sidebar:w-8"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 shadow-sm overflow-hidden transition-all duration-300 group-data-[collapsible=icon]/sidebar:h-8 group-data-[collapsible=icon]/sidebar:w-8"
         >
           <img
             :src="LogoCompany"
             alt="Company Logo"
-            class="h-full w-full object-contain p-1.5 transition-transform duration-300 group-data-[collapsible=icon]/sidebar:scale-90"
+            class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
           />
         </div>
         <div
-          class="ml-3 overflow-hidden transition-all duration-300 group-data-[collapsible=icon]/sidebar:opacity-0 group-data-[collapsible=icon]/sidebar:w-0"
+          class="flex flex-col overflow-hidden transition-all duration-300 group-data-[collapsible=icon]/sidebar:opacity-0 group-data-[collapsible=icon]/sidebar:w-0"
         >
-          <h2 class="text-lg font-semibold truncate">Your Company</h2>
-          <p class="text-xs text-muted-foreground truncate">Premium Dashboard</p>
+          <h2 class="text-sm font-bold tracking-tight text-foreground truncate">Your Company</h2>
+          <p
+            class="text-[10px] font-medium text-muted-foreground truncate uppercase tracking-wider"
+          >
+            Premium Panel
+          </p>
         </div>
       </div>
     </SidebarHeader>

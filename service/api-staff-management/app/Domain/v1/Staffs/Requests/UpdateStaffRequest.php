@@ -36,7 +36,7 @@ class UpdateStaffRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId)
             ],
-            User::PASSWORD => 'sometimes|nullable|string|min:8|confirmed',
+            User::PASSWORD => 'sometimes|nullable|string|min:8',
 
             // Staff fields
             Staff::OFFICE_ID => 'sometimes|required|exists:offices,id',
@@ -48,7 +48,7 @@ class UpdateStaffRequest extends FormRequest
             Staff::JOIN_DATE => 'nullable|date',
             Staff::SHIFT_START => 'sometimes|required|date_format:H:i:s',
             Staff::SHIFT_END => 'sometimes|required|date_format:H:i:s|after:shift_start',
-            Staff::PROFILE_IMAGE => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            Staff::PROFILE_IMAGE => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max
         ];
     }
 

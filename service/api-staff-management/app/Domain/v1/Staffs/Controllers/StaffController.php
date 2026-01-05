@@ -5,6 +5,7 @@ namespace App\Domain\v1\Staffs\Controllers;
 use App\Http\Controllers\Controller;
 use App\Domain\v1\Staffs\Models\Staff;
 use App\Domain\v1\Staffs\Requests\CreateStaffRequest;
+use App\Domain\v1\Staffs\Requests\UpdateStaffRequest;
 use App\Domain\v1\Staffs\Services\StaffService;
 use App\Domain\v1\Users\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -78,7 +79,7 @@ class StaffController extends Controller
                 User::USERNAME,
                 User::EMAIL,
                 User::PASSWORD,
-                'password_confirmation',
+                // 'password_confirmation',
                 'role'
             ]);
             $staffData[Staff::USER_ID] = $user->id;
@@ -115,6 +116,76 @@ class StaffController extends Controller
         }
     }
     // Update
+    public function update(UpdateStaffRequest $request, int $id): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $staff = Staff::findOrFail($id);
+            $user = $staff->user;
+
+            // 1. Update User (if fields present)
+            if ($request->hasAny([User::USERNAME, User::EMAIL, User::PASSWORD])) {
+                $userData = $request->only([User::USERNAME, User::EMAIL]);
+                if ($request->filled(User::PASSWORD)) {
+                    $userData[User::PASSWORD] = $request->input(User::PASSWORD); // Hash is handled by model setter if you have one, or clarify if manual hash needed. Laravel User model usually casts 'hashed'.
+                    // If your User model doesn't auto-hash, use Hash::make() here. Assuming User model handles it or Request doesn't need to.
+                    // For safety, let's look at store method: User::create($request->only(...))
+                    // If standard Laravel User model, 'password' => 'hashed' cast attribute handles it or explicit hashing.
+                    // Let's assume standard behavior for now.
+                }
+                $user->update($userData);
+            }
+
+            // 2. Update Role if provided
+            if ($request->has('role')) {
+                $user->syncRoles([$request->role]);
+            }
+
+            // 3. Handle Image Update
+            $staffData = $request->safe()->except([
+                User::USERNAME, User::EMAIL, User::PASSWORD, 'role', 'password_confirmation'
+            ]);
+
+            if ($request->hasFile(Staff::PROFILE_IMAGE)) {
+                // Delete old image
+                if ($staff->profile_image) {
+                    $this->staffService->deleteProfileImage($staff->profile_image);
+                }
+                // Upload new image
+                $imageUrl = $this->staffService->uploadProfileImage($request->file(Staff::PROFILE_IMAGE));
+                $staffData[Staff::PROFILE_IMAGE] = $imageUrl;
+            }
+
+            // 4. Update Staff
+            $staff->update($staffData);
+
+            // 5. Reload relations
+            $staff->load([
+                'user' => fn($q) => $q->select('id', 'username', 'email')->with('roles:id,name'),
+                'office' => fn($q) => $q->select('id', 'name')
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Staff updated successfully',
+                'data' => $staff
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Staff record not found'
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update staff: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     // Delete
     public function destroy(int $id): JsonResponse

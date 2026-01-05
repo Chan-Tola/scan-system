@@ -43,4 +43,6 @@ docker-compose logs -f ( name image )
 
 docker logs api-staff-management --tail 50
 
+docker-compose up --build -d api-staff-management
+
 

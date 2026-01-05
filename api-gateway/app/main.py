@@ -12,17 +12,26 @@ from app.Shared.Middleware.auth_middleware import AuthMiddleware
 app = FastAPI(title="API Gateway (DDD)")
 
 # 1. CORS middleware (must be added before other middleware)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[
+#         "http://localhost:5173",
+#         "http://127.0.0.1:5173",
+#         "https://unreconsidered-tiresomely-kimberlee.ngrok-free.dev",
+#     ],
+#     allow_credentials=True,  # Required for cookies
+#     allow_methods=["*"],  # Allow all HTTP methods
+#     allow_headers=["*"],  # Allow all headers
+# )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:3000",  # Alternative dev port
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
+        "http://localhost:5173", 
+        "https://unreconsidered-tiresomely-kimberlee.ngrok-free.dev"
     ],
-    allow_credentials=True,  # Required for cookies
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 2. Auth middleware
