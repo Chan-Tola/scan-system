@@ -13,7 +13,6 @@ class UpdateStaffRequest extends FormRequest
     {
         return true;
     }
-
     public function rules(): array
     {
         $staffId = $this->route('id');
@@ -21,7 +20,7 @@ class UpdateStaffRequest extends FormRequest
         $userId = $staff ? $staff->user_id : null;
 
         return [
-            // User Fields (optional on update)
+            // User fields (Admin only in Controller, but validated here if sent)
             User::USERNAME => [
                 'sometimes',
                 'required',
@@ -48,7 +47,8 @@ class UpdateStaffRequest extends FormRequest
             Staff::JOIN_DATE => 'nullable|date',
             Staff::SHIFT_START => 'sometimes|required|date_format:H:i:s',
             Staff::SHIFT_END => 'sometimes|required|date_format:H:i:s|after:shift_start',
-            Staff::PROFILE_IMAGE => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max
+            Staff::PROFILE_IMAGE => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:51200',
+            'role' => 'sometimes|required|string|exists:roles,name',
         ];
     }
 
@@ -56,11 +56,8 @@ class UpdateStaffRequest extends FormRequest
     {
         return [
             User::USERNAME . '.unique' => 'Username already exists',
-            User::EMAIL . '.email' => 'Email must be a valid email address',
             User::EMAIL . '.unique' => 'Email already exists',
             User::PASSWORD . '.min' => 'Password must be at least 8 characters',
-            User::PASSWORD . '.confirmed' => 'Password confirmation does not match',
-            Staff::OFFICE_ID . '.exists' => 'Selected office does not exist',
             Staff::SHIFT_END . '.after' => 'Shift end time must be after shift start time',
         ];
     }

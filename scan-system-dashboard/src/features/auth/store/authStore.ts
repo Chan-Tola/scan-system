@@ -12,44 +12,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!user.value)
 
-  // async function login(credentials: any) {
-  //   isLoading.value = true
-  //   error.value = null
-  //   try {
-  //     // Step 1: Authenticate and create session
-  //     console.log('🔐 Step 1: Authenticating...')
-  //     await authApi.login(credentials)
-
-  //     // Step 2: Fetch complete profile with staff details
-  //     console.log('👤 Step 2: Fetching complete profile...')
-  //     const data = await authApi.me()
-  //     user.value = data.user
-
-  //     // Log the complete profile data for verification
-  //     console.log('✅ Login successful! Complete profile data:')
-  //     console.log('📧 Email:', data.user.email)
-  //     console.log('👤 Username:', data.user.username)
-  //     console.log('📋 Full Profile:', data.user.profile)
-
-  //     if (data && data.debug_error) {
-  //       console.warn('⚠️ Profile fetch debug info:', data.debug_error)
-  //     } else if (data && !data.user.profile) {
-  //       console.warn('⚠️ Profile is missing but no debug_error was returned from gateway.')
-  //     }
-
-  //     return true
-  //   } catch (err: any) {
-  //     console.error('❌ Login failed:', err)
-  //     error.value =
-  //       err.response?.data?.detail ||
-  //       err.response?.data?.message ||
-  //       'Login failed. Please check your credentials.'
-  //     return false
-  //   } finally {
-  //     isLoading.value = false
-  //   }
-  // }
-
   async function login(credentials: any) {
     isLoading.value = true
     error.value = null

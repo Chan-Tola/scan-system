@@ -64,4 +64,19 @@ class Staff extends Model
     {
         return $this->belongsTo(Office::class);
     }
+
+    /**
+     * Get optimized profile image URL with transformations applied on-demand
+     * This accessor automatically optimizes the image URL when accessed
+     */
+    public function getProfileImageOptimizedAttribute(): ?string
+    {
+        if (!$this->profile_image) {
+            return null;
+        }
+
+        // Use StaffService to get optimized URL
+        $staffService = app(\App\Domain\v1\Staffs\Services\StaffService::class);
+        return $staffService->getOptimizedImageUrl($this->profile_image);
+    }
 }

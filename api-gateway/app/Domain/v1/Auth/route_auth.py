@@ -8,7 +8,7 @@ from app.Shared.Core.session_store import (
 )
 from app.Shared.Core.config import settings
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter()
 
 @router.post("/login")
 async def login(payload: dict, response: Response):

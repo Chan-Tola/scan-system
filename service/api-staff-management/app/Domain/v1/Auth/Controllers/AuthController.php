@@ -40,8 +40,14 @@ class AuthController extends Controller
     {
         $userId = $request->input('user_id');
 
-        // Optimized query: Select only needed columns for speed
-        $staff = \App\Domain\v1\Staffs\Models\Staff::with(['user:id,email,username', 'office:id,name'])
+        // 1. Fetch Staff with User, Office, and User Roles
+        $staff = \App\Domain\v1\Staffs\Models\Staff::with([
+            'user' => function ($q) {
+                // Select only specific user columns and their role names
+                $q->select('id', 'email', 'username')->with('roles:id,name');
+            },
+            'office:id,name'
+        ])
             ->select(
                 'id',
                 'user_id',
@@ -57,22 +63,29 @@ class AuthController extends Controller
             ->where('user_id', $userId)
             ->first();
 
+
         if (!$staff) {
-            $user = \App\Domain\v1\Users\Models\User::select('id', 'email', 'username')->find($userId);
+            $user = \App\Domain\v1\Users\Models\User::with('roles:id,name')
+                ->select('id', 'email', 'username')
+                ->find($userId);
+
             if (!$user) return response()->json(['message' => 'Not found'], 404);
 
             return response()->json([
                 'id'       => $user->id,
                 'email'    => $user->email,
                 'username' => $user->username,
+                'role'     => $user->roles->first()?->name ?? 'user',
                 'profile'  => null
             ], 200);
         }
+
 
         return response()->json([
             'id'       => $staff->user->id,
             'email'    => $staff->user->email,
             'username' => $staff->user->username,
+            'role'     => $staff->user->roles->first()?->name ?? 'staff',
             'profile'  => $staff
         ], 200);
     }

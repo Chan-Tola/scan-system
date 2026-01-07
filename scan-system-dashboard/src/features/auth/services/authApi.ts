@@ -12,18 +12,18 @@ export const authApi = {
   // Matches your endpoint: /auth/login
   // login method
   login: async (credentials: any): Promise<AuthResponse> => {
-    const response = await api.post('/auth/login', credentials)
+    const response = await api.post('/api/auth/login', credentials)
     return response.data
   },
 
   // Get current user from session
   me: async (): Promise<AuthResponse> => {
-    const response = await api.get('/auth/me')
+    const response = await api.get('/api/auth/me')
     return response.data
   },
 
   // logout method
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout')
+    await api.post('/api/auth/logout')
   },
 }

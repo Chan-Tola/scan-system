@@ -6,11 +6,10 @@ export interface StaffProfile {
   gender: string
   phone: string
   address: string
-  date_of_birth: string
-  join_date: string
+  profile_image: string | null
   shift_start: string
   shift_end: string
-  profile_image: string | null
+  // Optional if you want to access office details from the profile
   office?: {
     id: number
     name: string
@@ -18,14 +17,15 @@ export interface StaffProfile {
 }
 
 export interface User {
-  id: string
+  id: number // Changed from string to number to match your Laravel ID
   email: string
   username: string
-  profile?: StaffProfile | null
+  role: 'admin' | 'staff' // Added the role property here
+  profile: StaffProfile | null
 }
 
 export interface AuthResponse {
+  status: string
   user: User
   message?: string
-  debug_error?: any
 }

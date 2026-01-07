@@ -11,10 +11,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)
         
+        path = request.url.path
+        
         # 2. Skip auth for public endpoints (login, logout, me, docs, and root)
         # Note: /auth/me validates its own session
-        public_paths = ["/auth/login", "/auth/logout", "/auth/me", "/staff/login", "/", "/docs", "/openapi.json"]
-        if request.url.path in public_paths:
+        public_paths = [
+            "/api/auth/login", 
+            "/api/auth/logout", 
+            "/api/auth/me", 
+            "/", 
+            "/docs", 
+            "/openapi.json",
+            "/health" # បន្ថែមផ្លូវ health check
+        ]
+        if path in public_paths:
             return await call_next(request)
 
         # 3. SECURITY: Extract and validate Session ID from Cookie

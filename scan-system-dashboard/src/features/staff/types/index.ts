@@ -22,22 +22,15 @@ export interface Office {
 // The Staff Member (Response from Server)
 export interface StaffMember {
   id: number
-  user_id: number
-  office_id: number
   full_name: string
-  gender: 'male' | 'female'
   phone: string
-  address: string
-  date_of_birth: string
+  email: string
+  username: string
+  role: UserRoleName
+  office_name: string
+  shift: string // Format: "08:00 - 17:00"
   join_date: string
-  shift_start: string
-  shift_end: string
-  profile_image: string | null
-  created_at: string
-  updated_at: string
-  user: UserAccount
-  office: Office
-  // UI State - Not from API, used for the toggle row
+  // UI State only
   expanded?: boolean
 }
 

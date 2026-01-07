@@ -9,7 +9,7 @@ from app.Domain.v1.QR_codes.Schemas.qr_schema import (
     GenerateQRCodeResponse
 )
 
-router = APIRouter(prefix="/generate-code", tags=["QR Code Generation"])
+router = APIRouter(tags=["QR Code Generation"])
 
 # Create a new QR code for a new office
 @router.post("", response_model=GenerateQRCodeResponse, status_code=status.HTTP_201_CREATED)

@@ -45,17 +45,6 @@ const filteredOffices = computed(() => {
   )
 })
 
-// Handlers
-const handleEdit = (office: Office) => {
-  editingOffice.value = office
-  isEditOpen.value = true
-}
-
-const confirmDelete = (officeId: number) => {
-  officeToDelete.value = officeId
-  isDeleteOpen.value = true
-}
-
 const performDelete = async () => {
   if (officeToDelete.value) {
     const success = await handleDeleteOffice(officeToDelete.value)

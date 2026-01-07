@@ -86,6 +86,7 @@ services:
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
+      - MAX_UPLOAD_SIZE=64M
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -95,6 +96,7 @@ services:
       - REDIS_HOST=redis
     volumes:
       - ./service/api-staff-management:/var/www/html
+      - ./service/api-staff-management/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
     networks:
       - attendance_network
     depends_on:

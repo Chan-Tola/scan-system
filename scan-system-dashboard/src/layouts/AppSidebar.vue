@@ -39,6 +39,8 @@ import {
 } from 'lucide-vue-next'
 import LogoCompany from '@/assets/images/logo-company.jpg'
 import { computed } from 'vue'
+import AvatarImage from '@/components/ui/avatar/AvatarImage.vue'
+import Avatar from '@/components/ui/avatar/Avatar.vue'
 
 // Authentication & Routing
 const { user, handleLogout } = useAuth()
@@ -75,6 +77,14 @@ const managementItems = [
     title: 'Staff Members',
     url: '/staff',
     icon: Users,
+  },
+]
+
+const settingItems = [
+  {
+    title: 'Settings',
+    url: '/setting',
+    icon: Settings,
   },
 ]
 
@@ -131,6 +141,11 @@ const userInitials = computed(() => {
       <!-- Main Navigation -->
       <SidebarGroup>
         <SidebarGroupContent>
+          <SidebarGroupLabel
+            class="px-3 text-xs font-semibold uppercase text-muted-foreground tracking-wider"
+          >
+            Main Menu
+          </SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem v-for="item in mainItems" :key="item.title">
               <SidebarMenuButton
@@ -207,15 +222,25 @@ const userInitials = computed(() => {
               >
                 <div class="flex items-center w-full">
                   <!-- Avatar -->
-                  <div class="relative">
-                    <div
-                      class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-white font-medium text-sm shrink-0 transition-transform group-hover:scale-105"
+                  <div class="relative group">
+                    <Avatar
+                      class="h-9 w-9 border-2 border-sidebar-accent/50 transition-transform group-hover:scale-105"
                     >
-                      {{ userInitials }}
-                    </div>
-                    <div
-                      class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-sidebar bg-emerald-500"
-                    />
+                      <AvatarImage
+                        v-if="user?.profile?.profile_image"
+                        :src="user.profile.profile_image"
+                      />
+                      <AvatarFallback
+                        class="bg-gradient-to-br from-primary to-primary/70 text-white text-xs font-bold"
+                      >
+                        {{ userInitials }}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <!-- <div
+                      class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-sidebar bg-emerald-500 shadow-sm"
+                      title="Online"
+                    /> -->
                   </div>
 
                   <!-- User Info -->
@@ -223,7 +248,7 @@ const userInitials = computed(() => {
                     class="ml-3 flex-1 overflow-hidden text-left transition-all duration-300 group-data-[collapsible=icon]/sidebar:opacity-0 group-data-[collapsible=icon]/sidebar:w-0"
                   >
                     <p class="text-sm font-semibold truncate">{{ user.username }}</p>
-                    <p class="text-xs text-muted-foreground truncate">Administrator</p>
+                    <p class="text-xs text-muted-foreground truncate">{{ user.role }}</p>
                   </div>
 
                   <!-- Chevron -->
@@ -241,12 +266,9 @@ const userInitials = computed(() => {
             >
               <DropdownMenuLabel class="p-2">
                 <div class="flex items-center gap-2">
-                  <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                    <User2 class="size-4 text-primary" />
-                  </div>
                   <div class="flex flex-col">
                     <span class="font-semibold">{{ user.username }}</span>
-                    <span class="text-xs text-muted-foreground">admin@example.com</span>
+                    <span class="text-xs text-muted-foreground">{{ user.email }}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -254,17 +276,16 @@ const userInitials = computed(() => {
               <DropdownMenuSeparator class="my-2" />
 
               <DropdownMenuItem
+                v-for="item in settingItems"
+                :key="item.title"
+                @click="handleNavigation(item.url)"
                 class="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent"
               >
-                <Settings class="size-4" />
-                <span>Account Settings</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                class="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent"
-              >
-                <CreditCard class="size-4" />
-                <span>Billing</span>
+                <component
+                  :is="item.icon"
+                  class="size-4 shrink-0 transition-transform group-hover:scale-110"
+                />
+                <span>{{ item.title }}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator class="my-2" />

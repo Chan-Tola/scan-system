@@ -23,7 +23,7 @@ class Office extends Model
         self::SHIFT_END,
     ];
 
-    
+
     public function staff(): HasMany
     {
         return $this->hasMany(Staff::class);

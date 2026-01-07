@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Domain\v1\Staffs\Models\Staff;
 use App\Domain\v1\Staffs\Requests\CreateStaffRequest;
 use App\Domain\v1\Staffs\Requests\UpdateStaffRequest;
+use App\Domain\v1\Staffs\Resources\StaffResource;
 use App\Domain\v1\Staffs\Services\StaffService;
 use App\Domain\v1\Users\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -27,32 +28,24 @@ class StaffController extends Controller
     public function index(Request $request)
     {
         $staff = Staff::query()
+            ->select('id', 'user_id', 'office_id', 'full_name', 'phone', 'shift_start', 'shift_end', 'join_date')
             ->with([
-                'user' => function ($q) {
-                    $q->select('id', 'username', 'email')
-                        ->with('roles:id,name');
-                },
-                'office' => fn($q) => $q->select('id', 'name')
+                'user:id,email,username',
+                'user.roles:id,name',
+                'office:id,name'
             ])
             ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    // Ensure these columns are indexed in DB
-                    $q->where('full_name', 'like', "{$search}%") //Forward-matching
-                        ->orWhere('phone', 'like', "{$search}%");
-                });
+                $query->where('full_name', 'like', "{$search}%")
+                    ->orWhere('phone', 'like', "{$search}%");
             })
-            ->when($request->office_id, function ($query, $officeId) {
-                $query->where('office_id', $officeId);
-            })
-            ->latest()  // Good to have a predictable order for pagination
+            ->latest()
             ->paginate($request->get('per_page', 15));
 
         return response()->json([
             'status' => 'success',
-            'data' => $staff->items(),
+            'data' => StaffResource::collection($staff->items()),
             'pagination' => [
                 'current_page' => $staff->currentPage(),
-                'per_page'     => $staff->perPage(),
                 'total'        => $staff->total(),
                 'last_page'    => $staff->lastPage(),
             ]
@@ -62,53 +55,69 @@ class StaffController extends Controller
     // Store
     public function store(CreateStaffRequest $request): JsonResponse
     {
+        // PERFORMANCE: Upload image BEFORE starting transaction
+        // This prevents holding the DB transaction open during slow Cloudinary upload
+        $imageUrl = null;
+        
         try {
+            // 1. Handle Image Upload FIRST (outside transaction for better performance)
+            if ($request->hasFile(Staff::PROFILE_IMAGE)) {
+                $imageUrl = $this->staffService->uploadProfileImage($request->file(Staff::PROFILE_IMAGE));
+            }
+
+            // 2. NOW start database transaction (faster since image is already uploaded)
             DB::beginTransaction();
-            // Create User 
+            
+            // 3. Create User 
             $user = User::create($request->only([
                 User::USERNAME,
                 User::EMAIL,
                 User::PASSWORD
             ]));
 
-            // 2. Assign Role ឱ្យ User (ដូចក្នុង Command របស់អ្នក)
+            // 4. Assign Role
             $user->assignRole($request->role);
 
-            // 2. Prepare staff data that insert in the feild in the CreateStaffRequest
+            // 5. Prepare staff data
             $staffData = $request->safe()->except([
                 User::USERNAME,
                 User::EMAIL,
                 User::PASSWORD,
-                // 'password_confirmation',
                 'role'
             ]);
             $staffData[Staff::USER_ID] = $user->id;
 
-
-            // 3. Handle Image in the Cloudinary
-            if ($request->hasFile(Staff::PROFILE_IMAGE)) {
-                $imageUrl = $this->staffService->uploadProfileImage($request->file(Staff::PROFILE_IMAGE));
+            // 6. Add uploaded image URL if exists
+            if ($imageUrl) {
                 $staffData[Staff::PROFILE_IMAGE] = $imageUrl;
             }
 
-            //  4. Create Staff
+            // 7. Create Staff
             $staff = Staff::create($staffData);
 
-            // 5. Load data respone
+            // 8. Load relationships for response
             $staff->load([
                 'user' => fn($q) => $q->select('id', 'username', 'email')->with('roles:id,name'),
                 'office' => fn($q) => $q->select('id', 'name')
             ]);
 
             DB::commit();
-            // 6. Respones
+            
+            // 9. Return success response
             return response()->json([
                 'status' => 'success',
                 'message' => 'Staff and user created successfully',
                 'data' => $staff
-            ], 201);;
+            ], 201);
+            
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // CLEANUP: If we uploaded an image but DB failed, delete it from Cloudinary
+            if ($imageUrl) {
+                $this->staffService->deleteProfileImage($imageUrl);
+            }
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create staff: ' . $e->getMessage()
@@ -118,72 +127,103 @@ class StaffController extends Controller
     // Update
     public function update(UpdateStaffRequest $request, int $id): JsonResponse
     {
+        // PERFORMANCE: Handle image upload BEFORE transaction
+        $newImageUrl = null;
+        $oldImageUrl = null;
+        
         try {
-            DB::beginTransaction();
-
+            // 1. Find the staff record first
             $staff = Staff::findOrFail($id);
             $user = $staff->user;
+            
+            # Get current authenticated user (may be null)
+            $currentUser = $request->user();
 
-            // 1. Update User (if fields present)
-            if ($request->hasAny([User::USERNAME, User::EMAIL, User::PASSWORD])) {
+            # if not authenticated, return 401
+            if (!$currentUser) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+            }
+
+            $isAdmin = $currentUser->hasRole('admin');
+            
+            // 2. Handle Image Upload FIRST (outside transaction for better performance)
+            if ($request->hasFile(Staff::PROFILE_IMAGE)) {
+                $oldImageUrl = $staff->profile_image; // Store for cleanup
+                $newImageUrl = $this->staffService->uploadProfileImage($request->file(Staff::PROFILE_IMAGE));
+            }
+
+            // 3. NOW start database transaction
+            DB::beginTransaction();
+            
+            // 4. Update User Account (ADMIN ONLY)
+            if ($isAdmin) {
                 $userData = $request->only([User::USERNAME, User::EMAIL]);
+
                 if ($request->filled(User::PASSWORD)) {
-                    $userData[User::PASSWORD] = $request->input(User::PASSWORD); // Hash is handled by model setter if you have one, or clarify if manual hash needed. Laravel User model usually casts 'hashed'.
-                    // If your User model doesn't auto-hash, use Hash::make() here. Assuming User model handles it or Request doesn't need to.
-                    // For safety, let's look at store method: User::create($request->only(...))
-                    // If standard Laravel User model, 'password' => 'hashed' cast attribute handles it or explicit hashing.
-                    // Let's assume standard behavior for now.
+                    // Hashing here for safety
+                    $userData[User::PASSWORD] = bcrypt($request->input(User::PASSWORD));
                 }
-                $user->update($userData);
+
+                if (!empty($userData)) {
+                    $user->update($userData);
+                }
+
+                // Update Role
+                if ($request->has('role')) {
+                    $user->syncRoles([$request->role]);
+                }
             }
 
-            // 2. Update Role if provided
-            if ($request->has('role')) {
-                $user->syncRoles([$request->role]);
-            }
-
-            // 3. Handle Image Update
+            // 5. Handle Staff Information (Both Staff & Admin)
+            // We exclude sensitive user fields so staff can't sneak them in via staffData
             $staffData = $request->safe()->except([
-                User::USERNAME, User::EMAIL, User::PASSWORD, 'role', 'password_confirmation'
+                User::USERNAME,
+                User::EMAIL,
+                User::PASSWORD,
+                'role'
             ]);
 
-            if ($request->hasFile(Staff::PROFILE_IMAGE)) {
-                // Delete old image
-                if ($staff->profile_image) {
-                    $this->staffService->deleteProfileImage($staff->profile_image);
-                }
-                // Upload new image
-                $imageUrl = $this->staffService->uploadProfileImage($request->file(Staff::PROFILE_IMAGE));
-                $staffData[Staff::PROFILE_IMAGE] = $imageUrl;
+            // 6. Add new image URL if uploaded
+            if ($newImageUrl) {
+                $staffData[Staff::PROFILE_IMAGE] = $newImageUrl;
             }
 
-            // 4. Update Staff
             $staff->update($staffData);
 
-            // 5. Reload relations
             $staff->load([
                 'user' => fn($q) => $q->select('id', 'username', 'email')->with('roles:id,name'),
                 'office' => fn($q) => $q->select('id', 'name')
             ]);
 
             DB::commit();
+            
+            // 7. Delete old image AFTER successful commit
+            if ($oldImageUrl && $newImageUrl) {
+                $this->staffService->deleteProfileImage($oldImageUrl);
+            }
 
+            // 8. Return clean response using Resource
             return response()->json([
                 'status' => 'success',
                 'message' => 'Staff updated successfully',
                 'data' => $staff
             ]);
+            
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Staff record not found'
-            ], 404);
+            // CLEANUP: If we uploaded a new image but update failed, delete it
+            if ($newImageUrl) {
+                $this->staffService->deleteProfileImage($newImageUrl);
+            }
+            return response()->json(['status' => 'error', 'message' => 'Staff record not found'], 404);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to update staff: ' . $e->getMessage()
-            ], 500);
+            
+            // CLEANUP: If we uploaded a new image but update failed, delete it
+            if ($newImageUrl) {
+                $this->staffService->deleteProfileImage($newImageUrl);
+            }
+            
+            return response()->json(['status' => 'error', 'message' => 'Update failed: ' . $e->getMessage()], 500);
         }
     }
 
@@ -191,24 +231,24 @@ class StaffController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            DB::beginTransaction();
-
-
+            // 1. Find the record first
             $staff = Staff::findOrFail($id);
-
-            // 3. get User and Image URL from Staff
             $user = $staff->user;
             $imagePath = $staff->profile_image;
 
-            // 4. delete Staff
-            $staff->delete();
+            DB::beginTransaction();
 
-            // 5. delete User
+            // 2. Delete the Staff and User from DB
+            // We do this inside the transaction
+            $staff->delete();
             if ($user) {
                 $user->delete();
             }
 
-            // 6. delete Cloudinary Service (Optional but Recommended)
+            // 3. Delete from Cloudinary
+            // We do this AFTER the local deletes but BEFORE the commit.
+            // Or, you can do it after commit if you don't want a Cloudinary failure 
+            // to roll back your database.
             if ($imagePath) {
                 $this->staffService->deleteProfileImage($imagePath);
             }
@@ -217,7 +257,7 @@ class StaffController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Staff, user, and related data deleted successfully'
+                'message' => 'Staff and related data deleted successfully'
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -228,7 +268,7 @@ class StaffController extends Controller
             DB::rollBack();
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to delete staff: ' . $e->getMessage()
+                'message' => 'Failed to delete: ' . $e->getMessage()
             ], 500);
         }
     }

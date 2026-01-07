@@ -54,7 +54,7 @@ export const useStaffStore = defineStore('staff', () => {
       isLoading.value = false
     }
   }
-  // Create office
+  // Create Staff
   async function createStaff(staffData: StaffCreate) {
     isLoading.value = true
     error.value = null
@@ -64,7 +64,16 @@ export const useStaffStore = defineStore('staff', () => {
       staffMembers.value.unshift(newStaff)
       return { success: true, data: newStaff }
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Failed to create staff'
+      // Check if it's a validation error with multiple errors
+      if (err.response?.data?.errors) {
+        console.log('Validation errors:', err.response.data.errors)
+        // Get first error message
+        const firstError = Object.values(err.response.data.errors)[0]
+        error.value = Array.isArray(firstError) ? firstError[0] : firstError
+      } else {
+        error.value = err.response?.data?.message || 'Failed to create staff'
+      }
+
       console.log('Failed to create staff:', err)
       console.log('Full error response:', err.response?.data)
       return { success: false, error: error.value }

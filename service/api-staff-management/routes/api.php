@@ -14,12 +14,12 @@ Route::prefix('internal')->group(function () {
 });
 
 // Staff routes - will be handled by StaffController later
-Route::prefix('staff')->group(function () {
+
+Route::middleware('gateway.auth')->prefix('staff')->group(function () {
     Route::get('/', [StaffController::class, 'index']);
     Route::post('/', [StaffController::class, 'store']);
+    Route::put('/{id}', [StaffController::class, 'update']);
     Route::delete('/{id}', [StaffController::class, 'destroy']);
-    Route::post('/{id}', [StaffController::class, 'update']); // Using POST for file upload spoofing if needed, but Laravel supports PUT with _method field. Let's start with direct PUT first or use POST to avoid multipart/form-data issues with PUT. Better use POST with /{id} for file uploads in PHP.
 
-    // Test Cloudinary endpoint
     Route::get('/test/cloudinary', [StaffController::class, 'testCloudinary']);
 });

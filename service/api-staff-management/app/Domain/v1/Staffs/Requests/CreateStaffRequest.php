@@ -33,7 +33,8 @@ class CreateStaffRequest extends FormRequest
             Staff::JOIN_DATE => 'nullable|date',
             Staff::SHIFT_START => 'nullable|date_format:H:i:s',
             Staff::SHIFT_END => 'nullable|date_format:H:i:s|after:shift_start',
-            Staff::PROFILE_IMAGE => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max
+            // Allow common modern formats and accept up to 50MB
+            Staff::PROFILE_IMAGE => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:51200',
         ];
     }
 

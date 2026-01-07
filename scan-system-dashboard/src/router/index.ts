@@ -8,34 +8,46 @@ const router = createRouter({
       path: '/',
       redirect: '/login',
     },
+    // login
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
       meta: { layout: 'AuthLayout', requiresGuest: true },
     },
+    // dashoard
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
+    // office
     {
       path: '/office',
       name: 'office',
       component: () => import('@/views/OfficeView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
+    // qr-generate
     {
       path: '/qr-generate',
       name: 'qr-generate',
       component: () => import('@/views/QrGenerateView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
+    // Staff
     {
       path: '/staff',
       name: 'staff',
       component: () => import('@/views/StaffView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
+    // Settings
+    {
+      path: '/setting',
+      name: 'setting',
+      component: () => import('@/views/SettingView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
   ],

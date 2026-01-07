@@ -6,52 +6,21 @@ from app.Shared.Infra.database import get_db  # ✅ Fixed
 from app.Domain.v1.Offices.Routes.route_office import router as office_router
 from app.Domain.v1.QR_codes.Routes.route_qr import router as qr_router
 
-app = FastAPI(title="API Scan Service")
+app = FastAPI(
+    title="API Scan Service",
+    description="Backend service for QR Management and Scanning",
+    version="1.0.0"
+)
 
-# Include routers
-app.include_router(office_router)
-app.include_router(qr_router)
-
+# Root Endpoint
 @app.get("/")
 async def root():
-    return {
-        "service": "API Scan Service",
-        "status": "running",
-        "version": "v1"
-    }
+    return {"service": "API Scan Service", "status": "active"}
 
-@app.get("/health")  # ✅ Fixed: removed colon
-async def health_check(db: Session = Depends(get_db)):  # ✅ Fixed: added db parameter
-    """Health check endpoint"""
-    try:
-        from sqlalchemy import text
-        result = db.execute(text("SELECT 1")).scalar()
-        return {
-            "status": "healthy",
-            "database": "connected" if result == 1 else "error",
-            "service": "api-scan"
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "database": f"error: {str(e)}",
-            "service": "api-scan"
-        }
+@app.get("/health", tags=["System"])
+async def health_check():
+    return {"status": "healthy"}
 
-@app.get("/scan")
-def scan_code(code: Optional[str] = None, db: Session = Depends(get_db)):
-    """Example scan endpoint"""
-    from sqlalchemy import text
-    result = db.execute(text("SELECT 1")).scalar()
-    
-    if code is None:
-        return {
-            "message": "Scan endpoint is ready. Provide a 'code' query parameter.",
-            "db_connection": "ok" if result == 1 else "error"
-        }
-    
-    return {
-        "scanned_code": code,
-        "timestamp": "2025-12-29",
-        "db_connection": "ok" if result == 1 else "error"
-    }
+# Include routers
+app.include_router(office_router,prefix="/offices")
+app.include_router(qr_router,prefix="/generate-code")
