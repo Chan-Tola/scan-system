@@ -3,10 +3,11 @@ export interface StaffProfile {
   user_id: number
   office_id: number
   full_name: string
-  gender: string
+  gender: 'male' | 'female' | null
   phone: string
-  address: string
+  address: string | null
   profile_image: string | null
+  date_of_birth: string | null
   shift_start: string
   shift_end: string
   // Optional if you want to access office details from the profile

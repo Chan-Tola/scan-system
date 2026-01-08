@@ -56,13 +56,16 @@ const toFormData = (data: any) => {
       formData.append(key, String(value))
     }
   })
-  
+
   // Debug: Log all FormData entries (except files)
-  console.log('FormData entries:', Array.from(formData.entries()).map(([k, v]) => [
-    k,
-    v instanceof File ? `[File: ${v.name}, ${v.size} bytes]` : v,
-  ]))
-  
+  console.log(
+    'FormData entries:',
+    Array.from(formData.entries()).map(([k, v]) => [
+      k,
+      v instanceof File ? `[File: ${v.name}, ${v.size} bytes]` : v,
+    ]),
+  )
+
   return formData
 }
 

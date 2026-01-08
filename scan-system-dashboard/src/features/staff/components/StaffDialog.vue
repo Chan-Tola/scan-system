@@ -60,19 +60,6 @@ const isEditingSelf = computed(() => {
   return currentUser.value?.id === props.user?.id
 })
 
-// Field-level permissions
-const canEditUsername = computed(() => props.mode === 'create' || isAdmin.value)
-const canEditEmail = computed(() => isAdmin.value)
-const canEditPassword = computed(() => isAdmin.value)
-const canEditRole = computed(() => isAdmin.value)
-const canEditOffice = computed(() => isAdmin.value)
-const canEditJoinDate = computed(() => isAdmin.value)
-
-const canEditThisProfile = computed(() => {
-  if (props.mode === 'create') return isAdmin.value // Only Admin can create
-  return isAdmin.value || isEditingSelf.value
-})
-
 // --- FORM STATE ---
 const form = ref<StaffCreate>({
   username: '',
@@ -398,10 +385,8 @@ const handleSave = async () => {
               </Label>
               <Input
                 v-model="form.username"
-                :disabled="!canEditUsername"
                 placeholder="username"
                 class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
-                :class="{ 'opacity-60 cursor-not-allowed': !canEditUsername }"
               />
             </div>
           </div>
@@ -414,7 +399,6 @@ const handleSave = async () => {
               <Input
                 v-model="form.email"
                 type="email"
-                :disabled="mode === 'edit'"
                 placeholder="name@company.com"
                 class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
               />
@@ -445,9 +429,7 @@ const handleSave = async () => {
               </Label>
               <select
                 v-model="form.office_id"
-                :disabled="!canEditOffice"
                 class="flex h-11 w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black"
-                :class="{ 'opacity-60 cursor-not-allowed': !canEditOffice }"
               >
                 <option value="0" disabled>Select Office</option>
                 <option v-for="office in offices" :key="office.id" :value="office.id">
@@ -462,9 +444,7 @@ const handleSave = async () => {
               </Label>
               <select
                 v-model="form.role"
-                :disabled="!canEditRole"
                 class="flex h-11 w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black"
-                :class="{ 'opacity-60 cursor-not-allowed': !canEditRole }"
               >
                 <option value="staff">Staff Member</option>
                 <option value="admin">Administrator</option>
@@ -519,9 +499,7 @@ const handleSave = async () => {
               <Input
                 type="date"
                 v-model="form.join_date"
-                :disabled="!canEditJoinDate"
                 class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
-                :class="{ 'opacity-60 cursor-not-allowed': !canEditJoinDate }"
               />
             </div>
 

@@ -11,7 +11,7 @@ import StaffTableRow from './StaffTableRow.vue'
 import type { StaffMember } from '../types'
 
 defineProps<{ users: StaffMember[] }>()
-const emit = defineEmits(['edit', 'delete', 'toggle'])
+const emit = defineEmits(['edit', 'delete', 'toggle', 'reset-password'])
 </script>
 
 <template>
@@ -37,6 +37,7 @@ const emit = defineEmits(['edit', 'delete', 'toggle'])
           @edit="emit('edit', $event)"
           @delete="emit('delete', $event)"
           @toggle="emit('toggle', $event)"
+          @reset-password="emit('reset-password', $event)"
         />
         <TableRow v-if="users.length === 0">
           <TableCell colspan="8" class="h-32 text-center text-slate-500">No staff found.</TableCell>

@@ -14,11 +14,12 @@ import {
 } from '@/components/ui/dialog'
 import StaffTable from '@/features/staff/components/StaffTable.vue'
 import StaffDialog from '@/features/staff/components/StaffDialog.vue'
+import ResetPasswordDialog from '@/features/staff/components/ResetPasswordDialog.vue'
 import { useStaff } from '@/features/staff'
 import type { StaffMember } from '@/features/staff/'
 
 // --- COMPOSABLES ---
-const { staffMembers, isLoading, error, loadStaffMembers, handleDeleteStaff } = useStaff()
+const { staffMembers, loadStaffMembers, handleDeleteStaff } = useStaff()
 
 // --- STATE ---
 const searchQuery = ref('') // Search input value
@@ -28,6 +29,8 @@ const isEditOpen = ref(false) // Controls edit dialog visibility
 const isDeleteOpen = ref(false) // Controls delete confirmation dialog
 const selectedUser = ref<StaffMember | null>(null) // User being edited
 const userToDelete = ref<number | null>(null) // ID of user to delete
+const isResetPasswordOpen = ref(false)
+const userToResetPassword = ref<StaffMember | null>(null)
 
 // --- LIFECYCLE ---
 // Load staff members when component mounts
@@ -76,6 +79,11 @@ const handleEdit = (user: StaffMember) => {
 const handleDelete = (id: number) => {
   userToDelete.value = id
   isDeleteOpen.value = true
+}
+
+const handleResetPassword = (user: StaffMember) => {
+  userToResetPassword.value = user
+  isResetPasswordOpen.value = true
 }
 
 // Perform the actual delete after confirmation
@@ -140,6 +148,7 @@ const handleSuccess = () => {
       @edit="handleEdit"
       @delete="handleDelete"
       @toggle="handleToggle"
+      @reset-password="handleResetPassword"
     />
 
     <!-- Edit Dialog (hidden until user clicks edit) -->
@@ -148,6 +157,13 @@ const handleSuccess = () => {
       :user="selectedUser"
       v-model:open="isEditOpen"
       @success="handleSuccess"
+    />
+
+    <!-- Reset Password Dialog -->
+    <ResetPasswordDialog
+      v-model:open="isResetPasswordOpen"
+      :user="userToResetPassword"
+      @success="loadStaffMembers()"
     />
 
     <!-- Delete Confirmation Dialog -->

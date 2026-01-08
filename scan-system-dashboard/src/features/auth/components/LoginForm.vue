@@ -2,18 +2,20 @@
 import { useForm } from 'vee-validate'
 import * as yup from 'yup'
 import { useAuth } from '@/features/auth/composables/useAuth'
+import { ref } from 'vue'
 
 // Using the @ alias instead of ../../../
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Loader2, Eye, EyeOff } from 'lucide-vue-next'
 import LogoCompany from '@/assets/images/logo-company.jpg'
 
 const { handleLogin, isLoading, error: apiError } = useAuth()
 
 const schema = yup.object({
-  email: yup.string().email('Enter a valid email').required('Required'),
+  identifier: yup.string().required('Username or email is required'),
   password: yup.string().min(6, 'Too short').required('Required'),
 })
 
@@ -21,8 +23,10 @@ const { handleSubmit, errors, defineField } = useForm({
   validationSchema: schema,
 })
 
-const [email, emailProps] = defineField('email')
+const [identifier, identifierProps] = defineField('identifier')
 const [password, passwordProps] = defineField('password')
+
+const showPassword = ref(false)
 
 const onSubmit = handleSubmit((values) => {
   handleLogin(values)
@@ -50,7 +54,7 @@ const onSubmit = handleSubmit((values) => {
     <Card class="border-none shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800">
       <CardHeader class="space-y-1 pb-6 text-center">
         <CardTitle class="text-xl">Login to your account</CardTitle>
-        <CardDescription> Enter your email below to login to your account </CardDescription>
+        <CardDescription>Enter your username or email to login</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -63,13 +67,12 @@ const onSubmit = handleSubmit((values) => {
           </div>
 
           <div class="grid gap-2">
-            <Label for="email">Email</Label>
+            <Label for="identifier">Username or Email</Label>
             <Input
-              id="email"
-              v-model="email"
-              v-bind="emailProps"
-              type="email"
-              placeholder="name@example.com"
+              id="identifier"
+              v-model="identifier"
+              type="text"
+              placeholder="Enter your username or email"
               :disabled="isLoading"
               class="h-11 bg-slate-50/50"
             />
@@ -86,14 +89,24 @@ const onSubmit = handleSubmit((values) => {
                 Forgot your password?
               </a>
             </div>
-            <Input
-              id="password"
-              v-model="password"
-              v-bind="passwordProps"
-              type="password"
-              :disabled="isLoading"
-              class="h-11 bg-slate-50/50"
-            />
+            <div class="relative">
+              <Input
+                id="password"
+                v-model="password"
+                v-bind="passwordProps"
+                :type="showPassword ? 'text' : 'password'"
+                :disabled="isLoading"
+                class="h-11 bg-slate-50/50 pr-10"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <Eye v-if="!showPassword" class="h-4 w-4" />
+                <EyeOff v-else class="h-4 w-4" />
+              </button>
+            </div>
             <p class="text-xs text-destructive font-medium">{{ errors.password }}</p>
           </div>
 

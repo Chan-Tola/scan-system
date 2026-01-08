@@ -20,8 +20,6 @@ export const useOfficeStore = defineStore('office', () => {
     error.value = null
     try {
       offices.value = await officeApi.getOffices()
-      // Show success toast
-      toast.success(`Success`)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Failed to fetch offices'

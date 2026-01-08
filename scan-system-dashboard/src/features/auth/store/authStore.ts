@@ -22,9 +22,6 @@ export const useAuthStore = defineStore('auth', () => {
       // 2. Get Profile
       const response = (await authApi.me()) as AuthResponse
 
-      // DEBUGGING: If you still see undefined, check this log:
-      console.log('DEBUG: Raw response from API:', response)
-
       // Assign to reactive state
       user.value = response.user
 

@@ -27,6 +27,7 @@ export interface StaffMember {
   full_name: string
   phone: string
   email: string
+  password: string
   role: UserRoleName
   office_name: string
   shift: string // e.g. "08:00 - 17:00"

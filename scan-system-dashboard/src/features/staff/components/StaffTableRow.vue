@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, ChevronDown, Trash2, Pencil, Eye, Clock } from 'lucide-vue-next'
+import { MoreVertical, ChevronDown, Trash2, Pencil, Eye, Clock, KeyRound } from 'lucide-vue-next'
 import type { StaffMember } from '../types'
 
 const props = defineProps<{
@@ -21,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'edit', user: StaffMember): void
   (e: 'delete', userId: number): void
+  (e: 'reset-password', user: StaffMember): void
   (e: 'toggle', user: StaffMember): void
 }>()
 
@@ -93,6 +94,9 @@ const roleBadgeClass = computed(() => {
             ><Pencil class="mr-2 h-4 w-4" /> Edit</DropdownMenuItem
           >
           <DropdownMenuSeparator />
+          <DropdownMenuItem @click="emit('reset-password', user)">
+            <KeyRound class="mr-2 h-4 w-4" /> Reset Password
+          </DropdownMenuItem>
           <DropdownMenuItem class="text-destructive" @click="emit('delete', user.id)"
             ><Trash2 class="mr-2 h-4 w-4" /> Delete</DropdownMenuItem
           >
