@@ -79,7 +79,7 @@ const roleBadgeClass = computed(() => {
     <TableCell class="text-right">
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" size="sm" class="h-8 w-8 p-0 opacity-0 group-hover:opacity-100">
+          <Button variant="ghost" size="sm" class="h-8 w-8 p-0">
             <MoreVertical class="h-4 w-4 text-slate-400" />
           </Button>
         </DropdownMenuTrigger>

@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { qrGenerateApi } from '../services/qrGenerateApi'
-import type { GenerateQRCodeRequest, GenerateQRCodeResponse, OfficeInfo, QRCodeResponse } from '../types'
+import type {
+  GenerateQRCodeRequest,
+  GenerateQRCodeResponse,
+  OfficeInfo,
+  QRCodeResponse,
+} from '../types'
+import { useLoadingStore } from '@/stores/loadingStore'
+import { toast } from 'vue-sonner'
 
 export const useQRGenerateStore = defineStore('qrGenerate', () => {
   const qrCodes = ref<QRCodeResponse[]>([])
@@ -29,7 +36,7 @@ export const useQRGenerateStore = defineStore('qrGenerate', () => {
   })
 
   // Load existing QR code for an office (with image)
-async function loadQRCodeForOffice(officeId: number) {
+  async function loadQRCodeForOffice(officeId: number) {
     isLoading.value = true
     error.value = null
     try {
@@ -38,31 +45,31 @@ async function loadQRCodeForOffice(officeId: number) {
         office_id: officeId,
         is_active: true,
       })
-  
+
       if (qrCodesList.length === 0) {
         currentQRCode.value = null
         return { success: true, qrCode: null }
       }
-  
+
       // Get the most recent active QR code
       const existingQR = qrCodesList[0]
-      
+
       // Type guard: ensure existingQR exists
       if (!existingQR) {
         currentQRCode.value = null
         return { success: true, qrCode: null }
       }
-  
+
       // Fetch the image for this QR code
       const imageData = await qrGenerateApi.getQRCodeImage(existingQR.id)
-  
+
       // Ensure office info exists, create fallback if null
       const officeInfo: OfficeInfo = existingQR.office || {
         id: officeId,
         name: 'Unknown Office',
         public_ip: '',
       }
-  
+
       // Combine QR code data with image to create GenerateQRCodeResponse
       currentQRCode.value = {
         id: existingQR.id,
@@ -74,7 +81,7 @@ async function loadQRCodeForOffice(officeId: number) {
         created_at: existingQR.created_at,
         updated_at: existingQR.updated_at,
       }
-  
+
       return { success: true, qrCode: currentQRCode.value }
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to load QR code'
@@ -88,41 +95,55 @@ async function loadQRCodeForOffice(officeId: number) {
 
   // Generate new QR code
   async function generateQRCode(officeId: number) {
-    isLoading.value = true
+    const loadingStore = useLoadingStore()
+
+    loadingStore.show('Generating QR code...')
     error.value = null
+
     try {
       const request: GenerateQRCodeRequest = { office_id: officeId }
       currentQRCode.value = await qrGenerateApi.generateQRCode(request)
+
       // Refresh list after generation
       await fetchQRCodes({ office_id: officeId })
+
+      // Show success toast
+      toast.success('QR code generated successfully')
+
       return { success: true, qrCode: currentQRCode.value }
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to generate QR code'
-      console.error('Failed to generate QR code:', err)
+
+      // Show error toast
+      toast.error(`Failed to generate QR code: ${error.value}`)
+
       return { success: false, error: error.value }
     } finally {
-      isLoading.value = false
+      loadingStore.hide()
     }
   }
 
   // Regenerate QR code
   async function regenerateQRCode(qrCodeId: number) {
-    isLoading.value = true
+    const loadingStore = useLoadingStore()
+
+    loadingStore.show('Regenerating QR code...')
     error.value = null
+
     try {
       // Call the regenerate API - this updates the backend and returns the new QR code
       const regeneratedQR = await qrGenerateApi.regenerateQRCode(qrCodeId)
-      
+
       // Update currentQRCode with the response from backend (this has the new token)
       currentQRCode.value = regeneratedQR
-      
+
       // Refresh the QR codes list for the selected office (without loading state to avoid flickering)
       if (selectedOfficeId.value) {
         // Update the list in the background without setting loading state
         try {
-          const updatedList = await qrGenerateApi.getQRCodes({ 
-            office_id: selectedOfficeId.value, 
-            is_active: true 
+          const updatedList = await qrGenerateApi.getQRCodes({
+            office_id: selectedOfficeId.value,
+            is_active: true,
           })
           qrCodes.value = updatedList
         } catch (listErr) {
@@ -138,13 +159,19 @@ async function loadQRCodeForOffice(officeId: number) {
         }
       }
 
+      // Show success toast
+      toast.success('QR code regenerated successfully')
+
       return { success: true, qrCode: currentQRCode.value }
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to regenerate QR code'
-      console.error('Failed to regenerate QR code:', err)
+
+      // Show error toast
+      toast.error(`Failed to regenerate QR code: ${error.value}`)
+
       return { success: false, error: error.value }
     } finally {
-      isLoading.value = false
+      loadingStore.hide()
     }
   }
 
@@ -188,21 +215,31 @@ async function loadQRCodeForOffice(officeId: number) {
 
   // Delete QR code (soft delete)
   async function deleteQRCode(qrCodeId: number) {
-    isLoading.value = true
+    const loadingStore = useLoadingStore()
+
+    loadingStore.show('Deleting QR code...')
     error.value = null
+
     try {
       await qrGenerateApi.deleteQRCode(qrCodeId)
       qrCodes.value = qrCodes.value.filter((qr) => qr.id !== qrCodeId)
       if (currentQRCode.value?.id === qrCodeId) {
         currentQRCode.value = null
       }
+
+      // Show success toast
+      toast.success('QR code deleted successfully')
+
       return { success: true }
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to delete QR code'
-      console.error('Failed to delete QR code:', err)
+
+      // Show error toast
+      toast.error(`Failed to delete QR code: ${error.value}`)
+
       return { success: false, error: error.value }
     } finally {
-      isLoading.value = false
+      loadingStore.hide()
     }
   }
 

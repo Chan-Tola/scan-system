@@ -65,6 +65,7 @@ const performDelete = async () => {
         <h1 class="text-3xl font-bold tracking-tight text-slate-900">Offices</h1>
         <p class="text-slate-500 mt-1">Manage your office locations and scanner configurations.</p>
       </div>
+      <!-- Create Office Button (opens dialog) -->
       <OfficeDialog mode="create" @success="refreshData" />
     </div>
 

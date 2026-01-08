@@ -1,6 +1,7 @@
-// Roles (Strictly Admin or Staff as you mentioned)
+// Roles (Strictly Admin or Staff)
 export type UserRoleName = 'admin' | 'staff'
 
+// (Optional) If you still use roles array somewhere else
 export interface Role {
   id: number
   name: UserRoleName
@@ -19,17 +20,23 @@ export interface Office {
   name: string
 }
 
-// The Staff Member (Response from Server)
+// ✅ Matches your API response item exactly
 export interface StaffMember {
   id: number
+  username: string
   full_name: string
   phone: string
   email: string
-  username: string
   role: UserRoleName
   office_name: string
-  shift: string // Format: "08:00 - 17:00"
-  join_date: string
+  shift: string // e.g. "08:00 - 17:00"
+
+  join_date: string // "YYYY-MM-DD"
+  date_of_birth: string | null
+  address: string | null
+  gender: 'male' | 'female' | null
+  profile_image: string | null // API returns URL string or null
+
   // UI State only
   expanded?: boolean
 }
@@ -48,28 +55,27 @@ export interface StaffCreate {
   shift_start?: string
   shift_end?: string
   role: UserRoleName
-  profile_image?: File | null // The actual file object for upload
+  profile_image?: File | null // upload file
 }
 
 export type StaffUpdate = Partial<StaffCreate> & { _method?: 'PUT' }
 
-// Response Wrappers
-export interface StaffMemberResponse {
-  status: string
-  data: StaffMember
-}
-
-// Pagination Metadata (Matches your controller response)
+// ✅ Pagination matches your response (no per_page)
 export interface Pagination {
   current_page: number
-  per_page: number
   total: number
   last_page: number
 }
 
-// The Full Response (The shape of your response()->json())
+// ✅ List response matches your JSON
 export interface StaffListResponse {
-  status: string
+  status: 'success' | 'error'
   data: StaffMember[]
   pagination: Pagination
+}
+
+// ✅ Single item response (if you have it)
+export interface StaffMemberResponse {
+  status: 'success' | 'error'
+  data: StaffMember
 }

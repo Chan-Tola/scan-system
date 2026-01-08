@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { staffApi } from '../services/staffApi'
 import type { StaffMember, StaffCreate, StaffUpdate, Pagination } from '../types'
+import { useLoadingStore } from '@/stores/loadingStore'
+import { toast } from 'vue-sonner'
 
 export const useStaffStore = defineStore('staff', () => {
   // State
@@ -56,17 +58,22 @@ export const useStaffStore = defineStore('staff', () => {
   }
   // Create Staff
   async function createStaff(staffData: StaffCreate) {
-    isLoading.value = true
+    const loadingStore = useLoadingStore()
+
+    loadingStore.show('Creating staff...')
     error.value = null
     try {
       const newStaff = await staffApi.createStaff(staffData)
       //  Add to begining of list since controller use lastest()
       staffMembers.value.unshift(newStaff)
+
+      // Show success toast
+      toast.success(`Staff created: ${newStaff.full_name}`)
+
       return { success: true, data: newStaff }
     } catch (err: any) {
       // Check if it's a validation error with multiple errors
       if (err.response?.data?.errors) {
-        console.log('Validation errors:', err.response.data.errors)
         // Get first error message
         const firstError = Object.values(err.response.data.errors)[0]
         error.value = Array.isArray(firstError) ? firstError[0] : firstError
@@ -74,17 +81,21 @@ export const useStaffStore = defineStore('staff', () => {
         error.value = err.response?.data?.message || 'Failed to create staff'
       }
 
-      console.log('Failed to create staff:', err)
-      console.log('Full error response:', err.response?.data)
+      // Show error toast
+      toast.error(`Failed to create staff: ${error.value}`)
+
       return { success: false, error: error.value }
     } finally {
-      isLoading.value = false
+      loadingStore.hide()
     }
   }
   // Update staff
   async function updateStaff(id: number, staffData: StaffUpdate) {
-    isLoading.value = true
+    const loadingStore = useLoadingStore()
+
+    loadingStore.show('Updating staff...')
     error.value = null
+
     try {
       const updatedStaff = await staffApi.updateStaff(id, staffData)
 
@@ -102,19 +113,28 @@ export const useStaffStore = defineStore('staff', () => {
         await authStore.refreshProfile()
       }
 
+      // Show success toast
+      toast.success('Staff updated successfully')
+
       return { success: true, data: updatedStaff }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Failed to update staff'
-      console.log('Failed to update staff:', err)
+
+      // Show error toast
+      toast.error(`Failed to update staff: ${error.value}`)
+
       return { success: false, error: error.value }
     } finally {
-      isLoading.value = false
+      loadingStore.hide()
     }
   }
-  // Delete office
+  // Delete staff
   async function deleteStaff(id: number) {
-    isLoading.value = true
+    const loadingStore = useLoadingStore()
+
+    loadingStore.show('Deleting staff...')
     error.value = null
+
     try {
       await staffApi.deleteStaff(id)
       staffMembers.value = staffMembers.value.filter((staff) => staff.id !== id)
@@ -122,12 +142,20 @@ export const useStaffStore = defineStore('staff', () => {
       if (currentStaff.value?.id === id) {
         currentStaff.value = null
       }
+
+      // Show success toast
+      toast.success('Staff deleted successfully')
+
       return { success: true }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Failed to delete staff'
+
+      // Show error toast
+      toast.error(`Failed to delete staff: ${error.value}`)
+
       return { success: false, error: error.value }
     } finally {
-      isLoading.value = false
+      loadingStore.hide()
     }
   }
 

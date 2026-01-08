@@ -21,6 +21,8 @@ class StaffResource extends JsonResource
                 ? substr($this->shift_start, 0, 5) . ' - ' . substr($this->shift_end, 0, 5)
                 : 'N/A',
             'join_date'     => $this->join_date,
+            'date_of_birth' => $this->date_of_birth,
+            'address' => $this->address,
             'profile_image' => $this->profile_image_optimized ?? $this->profile_image,
         ];
     }

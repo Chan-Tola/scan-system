@@ -26,7 +26,7 @@ const emit = defineEmits(['edit', 'delete', 'toggle'])
           <TableHead class="hidden md:table-cell">Office</TableHead>
           <TableHead class="hidden md:table-cell">Role</TableHead>
           <TableHead class="hidden xl:table-cell">Joined</TableHead>
-          <TableHead class="w-[50px]"></TableHead>
+          <TableHead class="hidden xl:table-cell text-end">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

@@ -49,6 +49,14 @@ const router = createRouter({
       name: 'setting',
       component: () => import('@/views/SettingView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
+      children: [
+        { path: '', redirect: { name: 'setting-account' } },
+        {
+          path: 'account',
+          name: 'setting-account',
+          component: () => import('@/features/setting/pages/SettingAccountPage.vue'),
+        },
+      ],
     },
   ],
 })

@@ -53,6 +53,21 @@ class Staff extends Model
                 }
             }
         });
+
+        // Update shift time when office location changes
+        static::updating(function ($staff) {
+            // Check if office_id is being changed
+            if ($staff->isDirty('office_id')) {
+                // Get the new office
+                $newOffice = Office::find($staff->office_id);
+
+                // Update shift times to match new office schedule
+                if ($newOffice && $newOffice->shift_start && $newOffice->shift_end) {
+                    $staff->shift_start = $newOffice->shift_start;
+                    $staff->shift_end = $newOffice->shift_end;
+                }
+            }
+        });
     }
 
     public function user(): BelongsTo

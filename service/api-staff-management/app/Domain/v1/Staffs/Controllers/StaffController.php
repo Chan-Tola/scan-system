@@ -28,7 +28,7 @@ class StaffController extends Controller
     public function index(Request $request)
     {
         $staff = Staff::query()
-            ->select('id', 'user_id', 'office_id', 'full_name', 'phone', 'shift_start', 'shift_end', 'join_date')
+            ->select('id', 'user_id', 'office_id', 'full_name', 'phone', 'shift_start', 'shift_end', 'join_date', 'date_of_birth', 'address')
             ->with([
                 'user:id,email,username',
                 'user.roles:id,name',
@@ -58,7 +58,7 @@ class StaffController extends Controller
         // PERFORMANCE: Upload image BEFORE starting transaction
         // This prevents holding the DB transaction open during slow Cloudinary upload
         $imageUrl = null;
-        
+
         try {
             // 1. Handle Image Upload FIRST (outside transaction for better performance)
             if ($request->hasFile(Staff::PROFILE_IMAGE)) {
@@ -67,7 +67,7 @@ class StaffController extends Controller
 
             // 2. NOW start database transaction (faster since image is already uploaded)
             DB::beginTransaction();
-            
+
             // 3. Create User 
             $user = User::create($request->only([
                 User::USERNAME,
@@ -102,22 +102,21 @@ class StaffController extends Controller
             ]);
 
             DB::commit();
-            
+
             // 9. Return success response
             return response()->json([
                 'status' => 'success',
                 'message' => 'Staff and user created successfully',
                 'data' => $staff
             ], 201);
-            
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             // CLEANUP: If we uploaded an image but DB failed, delete it from Cloudinary
             if ($imageUrl) {
                 $this->staffService->deleteProfileImage($imageUrl);
             }
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create staff: ' . $e->getMessage()
@@ -130,12 +129,12 @@ class StaffController extends Controller
         // PERFORMANCE: Handle image upload BEFORE transaction
         $newImageUrl = null;
         $oldImageUrl = null;
-        
+
         try {
             // 1. Find the staff record first
             $staff = Staff::findOrFail($id);
             $user = $staff->user;
-            
+
             # Get current authenticated user (may be null)
             $currentUser = $request->user();
 
@@ -145,7 +144,7 @@ class StaffController extends Controller
             }
 
             $isAdmin = $currentUser->hasRole('admin');
-            
+
             // 2. Handle Image Upload FIRST (outside transaction for better performance)
             if ($request->hasFile(Staff::PROFILE_IMAGE)) {
                 $oldImageUrl = $staff->profile_image; // Store for cleanup
@@ -154,7 +153,7 @@ class StaffController extends Controller
 
             // 3. NOW start database transaction
             DB::beginTransaction();
-            
+
             // 4. Update User Account (ADMIN ONLY)
             if ($isAdmin) {
                 $userData = $request->only([User::USERNAME, User::EMAIL]);
@@ -196,7 +195,7 @@ class StaffController extends Controller
             ]);
 
             DB::commit();
-            
+
             // 7. Delete old image AFTER successful commit
             if ($oldImageUrl && $newImageUrl) {
                 $this->staffService->deleteProfileImage($oldImageUrl);
@@ -208,7 +207,6 @@ class StaffController extends Controller
                 'message' => 'Staff updated successfully',
                 'data' => $staff
             ]);
-            
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             // CLEANUP: If we uploaded a new image but update failed, delete it
             if ($newImageUrl) {
@@ -217,12 +215,12 @@ class StaffController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Staff record not found'], 404);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             // CLEANUP: If we uploaded a new image but update failed, delete it
             if ($newImageUrl) {
                 $this->staffService->deleteProfileImage($newImageUrl);
             }
-            
+
             return response()->json(['status' => 'error', 'message' => 'Update failed: ' . $e->getMessage()], 500);
         }
     }

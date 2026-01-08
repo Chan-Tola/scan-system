@@ -14,20 +14,35 @@ import {
   BreadcrumbSeparator,
 } from '../components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
-import AppSidebar from './AppSidebar.vue'
+import AppSidebar from './components/AppSidebar.vue'
 import { Search } from 'lucide-vue-next'
 import Input from '@/components/ui/input/Input.vue'
-import { computed } from 'vue'
+import UserMenuDropdown from './components/UserMenuDropdown.vue'
+import { mainItems, managementItems, settingItems } from '@/layouts/stores/sidebar.menu'
 
-// Filtered Data
-// const filteredOffices = computed(() => {
-//   if (!AppSidebar.) return offices.value
-//   const query = searchQuery.value.toLowerCase()
-//   return offices.value.filter(
-//     (office) =>
-//       office.name.toLowerCase().includes(query) || office.public_ip?.toLowerCase().includes(query),
-//   )
-// })
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+// ✅ Search menu items (main + management)
+const allSidebarItems = computed(() => [...mainItems, ...managementItems, ...settingItems])
+
+const searchQuery = ref('')
+
+const handleSidebarSearch = () => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return
+
+  // exact match first, then partial match
+  const match =
+    allSidebarItems.value.find((item) => item.title.toLowerCase() === query) ||
+    allSidebarItems.value.find((item) => item.title.toLowerCase().includes(query))
+
+  if (match) {
+    router.push(match.url)
+    searchQuery.value = ''
+  }
+}
 </script>
 
 <template>
@@ -44,51 +59,32 @@ import { computed } from 'vue'
           <SidebarTrigger
             class="-ml-1 h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground lg:hidden"
           />
+
           <Separator orientation="vertical" class="mr-2 h-4" />
-          <div class="flex flex-col sm:flex-row items-center gap-4 flex-1">
-            <div class="relative w-full max-w-md">
-              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
 
-              <Input
-                v-model="searchQuery"
-                placeholder="Search staff members..."
-                class="pl-10 bg-white border-slate-200 focus:ring-primary/20 transition-all shadow-sm"
-              />
-            </div>
-
-            <div class="flex-1"></div>
+          <!-- ✅ Search (in Sidebar.vue header) -->
+          <div class="relative w-full max-w-md">
+            <Search
+              class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+            />
+            <Input
+              v-model="searchQuery"
+              placeholder="Search menu..."
+              class="pl-9 h-9"
+              @keyup.enter="handleSidebarSearch"
+            />
           </div>
 
-          <!-- <Breadcrumb class="hidden sm:flex">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  href="#"
-                  class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Dashboard
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage class="text-sm font-medium text-foreground">
-                  Data Fetching
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb> -->
+          <!-- Spacer -->
+          <div class="flex-1" />
 
-          <!-- Mobile title with premium typography -->
-          <!-- <div class="flex-1 sm:hidden flex justify-center">
-            <h1 class="text-sm font-semibold tracking-tight">Dashboard</h1>
-          </div> -->
-          <!-- Spacer to balance the center title on mobile if needed, or just let it flex -->
-          <!-- <div class="w-9 sm:hidden"></div> -->
+          <!-- User Menu -->
+          <UserMenuDropdown />
         </div>
 
         <!-- Header Actions -->
         <div class="flex items-center gap-2">
-          <!-- Add Theme Toggle or Notifications here later -->
+          <!-- actions later -->
         </div>
       </header>
 
@@ -103,19 +99,16 @@ import { computed } from 'vue'
 </template>
 
 <style scoped>
-/* Smooth transitions */
 header {
   transition: all 0.2s ease;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   main {
     padding: 1rem;
   }
 }
 
-/* Dark mode support */
 @media (prefers-color-scheme: dark) {
   header {
     background-color: hsl(var(--background) / 0.8);

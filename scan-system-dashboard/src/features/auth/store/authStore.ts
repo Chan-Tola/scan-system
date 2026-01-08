@@ -28,12 +28,6 @@ export const useAuthStore = defineStore('auth', () => {
       // Assign to reactive state
       user.value = response.user
 
-      console.log('✅ Login successful!')
-      console.log('📧 Email:', user.value.email)
-
-      // Use optional chaining to prevent crashes if profile is missing
-      console.log('📋 Full Profile:', user.value.profile)
-
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Login failed'

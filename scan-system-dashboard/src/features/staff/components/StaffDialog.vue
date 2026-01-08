@@ -27,6 +27,7 @@ import type { StaffMember, StaffCreate } from '../types'
 import { useStaff } from '../composables/useStaff'
 import { useOffice } from '@/features/office/composables/useOffice'
 import { compressImage } from '../utils/imageCompression'
+import { useAuthStore } from '@/features/auth/store/authStore'
 
 interface Props {
   mode?: 'create' | 'edit'
@@ -43,6 +44,7 @@ const emit = defineEmits(['update:open', 'success'])
 
 const { handleCreateStaff, handleUpdateStaff, isLoading, error } = useStaff()
 const { offices, loadOffices } = useOffice()
+const authStore = useAuthStore()
 
 // --- UI STATE ---
 const currentStep = ref(1)
@@ -50,6 +52,26 @@ const totalSteps = 2
 const internalOpen = ref(false)
 const localError = ref('')
 const previewImage = ref<string | null>(null)
+
+const currentUser = computed(() => authStore.user)
+const isAdmin = computed(() => currentUser.value?.role === 'admin')
+const isEditingSelf = computed(() => {
+  if (props.mode === 'create') return false
+  return currentUser.value?.id === props.user?.id
+})
+
+// Field-level permissions
+const canEditUsername = computed(() => props.mode === 'create' || isAdmin.value)
+const canEditEmail = computed(() => isAdmin.value)
+const canEditPassword = computed(() => isAdmin.value)
+const canEditRole = computed(() => isAdmin.value)
+const canEditOffice = computed(() => isAdmin.value)
+const canEditJoinDate = computed(() => isAdmin.value)
+
+const canEditThisProfile = computed(() => {
+  if (props.mode === 'create') return isAdmin.value // Only Admin can create
+  return isAdmin.value || isEditingSelf.value
+})
 
 // --- FORM STATE ---
 const form = ref<StaffCreate>({
@@ -69,21 +91,47 @@ const form = ref<StaffCreate>({
 
 onMounted(() => loadOffices())
 
-// --- LOGIC ---
+// --- WATCHERS & DIALOG LOGIC ---
+
+// Watch dialog open/close state
 watch(
   () => props.open,
   (val) => {
     internalOpen.value = val
+
+    // When dialog opens
     if (val) {
       currentStep.value = 1
       localError.value = ''
+
+      // IMPORTANT: Reset form when opening in create mode
+      if (props.mode === 'create') {
+        resetForm()
+      }
+    }
+
+    // When dialog closes, clean up
+    if (!val) {
+      // Clean up preview image URL to prevent memory leaks
+      if (previewImage.value && !previewImage.value.startsWith('http')) {
+        URL.revokeObjectURL(previewImage.value)
+      }
+
+      // Reset form after a short delay (allows close animation to complete)
+      setTimeout(() => {
+        if (props.mode === 'create') {
+          resetForm()
+        }
+      }, 200)
     }
   },
 )
 
+// Watch for user prop changes (for edit mode)
 watch(
   () => props.user,
   (val) => {
+    // EDIT MODE: Load user data into form
     if (val && props.mode === 'edit') {
       const matchingOffice = offices.value.find((o) => o.name === val.office_name)
 
@@ -94,19 +142,28 @@ watch(
         phone: val.phone,
         role: val.role,
         office_id: matchingOffice ? matchingOffice.id : 0,
-        gender: 'male',
-        address: '', // This will bind to the new input
-        date_of_birth: '',
+        gender: val.gender || 'male',
+        address: val.address || '',
+        date_of_birth: val.date_of_birth || '',
         join_date: val.join_date,
-        profile_image: null, // Reset file on edit start
+        profile_image: null,
       }
-    } else {
+
+      // Clear preview image when switching users
+      if (previewImage.value && !previewImage.value.startsWith('http')) {
+        URL.revokeObjectURL(previewImage.value)
+      }
+      previewImage.value = null
+    }
+    // CREATE MODE: Reset form when user prop becomes null
+    else if (props.mode === 'create') {
       resetForm()
     }
   },
   { immediate: true },
 )
 
+// Reset form to initial empty state
 function resetForm() {
   form.value = {
     username: '',
@@ -122,12 +179,24 @@ function resetForm() {
     join_date: new Date().toISOString().split('T')[0] ?? '',
     profile_image: null,
   }
+
+  // Clean up preview image
+  if (previewImage.value && !previewImage.value.startsWith('http')) {
+    URL.revokeObjectURL(previewImage.value)
+  }
   previewImage.value = null
   currentStep.value = 1
+  localError.value = ''
 }
 
+// Handle dialog open/close state changes
 const handleOpenChange = (open: boolean) => {
-  if (props.mode === 'create') internalOpen.value = open
+  // Update internal state for create mode
+  if (props.mode === 'create') {
+    internalOpen.value = open
+  }
+
+  // Emit to parent component
   emit('update:open', open)
 }
 
@@ -137,13 +206,6 @@ const handleFileChange = async (event: Event) => {
 
   if (file) {
     try {
-      console.log('Original file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        isFile: file instanceof File,
-      })
-
       // Compress image before setting it in the form
       // This significantly reduces upload time and file size
       const compressedFile = await compressImage(file, {
@@ -155,7 +217,6 @@ const handleFileChange = async (event: Event) => {
 
       // Validate that we have a valid File object
       if (!(compressedFile instanceof File)) {
-        console.warn('Compressed result is not a File, using original file')
         form.value.profile_image = file
         previewImage.value = URL.createObjectURL(file)
         return
@@ -181,14 +242,12 @@ const handleFileChange = async (event: Event) => {
         compressedSize: (compressedFile.size / (1024 * 1024)).toFixed(2) + 'MB',
       })
     } catch (error) {
-      console.error('Error processing image:', error)
       // Fallback: use original file if compression fails
       if (previewImage.value) {
         URL.revokeObjectURL(previewImage.value)
       }
       previewImage.value = URL.createObjectURL(file)
       form.value.profile_image = file
-      console.log('Using original file due to compression error')
     }
   } else {
     // Clear the file if no file selected
@@ -198,6 +257,14 @@ const handleFileChange = async (event: Event) => {
       previewImage.value = null
     }
   }
+}
+
+const clearProfileImage = () => {
+  form.value.profile_image = null
+  if (previewImage.value && !previewImage.value.startsWith('http')) {
+    URL.revokeObjectURL(previewImage.value)
+  }
+  previewImage.value = null
 }
 
 const isStep1Valid = computed(() => {
@@ -228,47 +295,36 @@ const handleSave = async () => {
     emit('success')
     handleOpenChange(false)
   }
-
-  console.log(result)
 }
 </script>
 
 <template>
   <Dialog :open="internalOpen" @update:open="handleOpenChange">
-    <DialogTrigger as-child v-if="mode === 'create'">
-      <Button class="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-md">
-        <Plus class="w-4 h-4" /> Add Staff Member
+    <DialogTrigger as-child v-if="mode === 'create' && isAdmin">
+      <Button class="gap-2 bg-black text-white hover:bg-black/90">
+        <Plus class="w-4 h-4" /> Create Staff
       </Button>
     </DialogTrigger>
 
-    <DialogContent class="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl">
-      <div class="bg-slate-900 p-6 text-white relative">
+    <DialogContent class="sm:max-w-[600px] p-0 overflow-hidden border border-black/10 shadow-2xl">
+      <!-- Header -->
+      <div class="p-6 text-black relative">
         <div class="z-10 relative">
-          <DialogTitle class="text-2xl font-bold tracking-tight">
+          <DialogTitle class="text-2xl font-semibold tracking-tight">
             {{ mode === 'edit' ? 'Update Staff Member' : 'Register New Staff' }}
           </DialogTitle>
-          <DialogDescription class="text-slate-400 mt-1">
+          <DialogDescription class="text-black/60 mt-1">
             Step {{ currentStep }} of {{ totalSteps }}:
             {{ currentStep === 1 ? 'Personal Information' : 'Employment Details' }}
           </DialogDescription>
         </div>
-
-        <div class="flex gap-2 mt-6">
-          <div
-            v-for="s in totalSteps"
-            :key="s"
-            :class="[
-              'h-1.5 flex-1 rounded-full transition-all duration-500',
-              currentStep >= s ? 'bg-indigo-500' : 'bg-slate-700',
-            ]"
-          ></div>
-        </div>
       </div>
 
+      <!-- Body -->
       <div class="p-8 bg-white">
         <div
           v-if="error || localError"
-          class="mb-6 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm flex items-center gap-2"
+          class="mb-6 p-3 rounded-lg bg-black text-white text-sm flex items-center gap-2"
         >
           <X class="w-4 h-4" /> {{ error || localError }}
         </div>
@@ -277,97 +333,121 @@ const handleSave = async () => {
           v-if="currentStep === 1"
           class="space-y-6 animate-in slide-in-from-right-4 duration-300"
         >
+          <!-- Profile Image -->
           <div
             v-if="mode === 'create'"
-            class="flex items-center gap-6 p-4 rounded-2xl bg-slate-50 border border-slate-100 group"
+            class="flex items-center gap-5 rounded-2xl border border-black/10 bg-white p-4"
           >
-            <div
-              class="relative w-24 h-24 rounded-full bg-white border-4 border-white shadow-sm overflow-hidden shrink-0 flex items-center justify-center"
-            >
-              <img v-if="previewImage" :src="previewImage" class="w-full h-full object-cover" />
-              <User v-else class="w-10 h-10 text-slate-200" />
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png"
-                @change="handleFileChange"
-                class="absolute inset-0 opacity-0 cursor-pointer z-10"
-              />
+            <div class="relative group shrink-0">
               <div
-                class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                class="relative h-24 w-24 overflow-hidden rounded-full border border-black/10 bg-white"
               >
-                <Upload class="w-6 h-6 text-white" />
+                <img v-if="previewImage" :src="previewImage" class="h-full w-full object-cover" />
+                <User v-else class="h-full w-full p-6 text-black/20" />
+
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png"
+                  @change="handleFileChange"
+                  class="absolute inset-0 z-10 cursor-pointer opacity-0"
+                />
+
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+                >
+                  <Upload class="h-6 w-6 text-white" />
+                </div>
               </div>
+
+              <button
+                v-if="previewImage"
+                type="button"
+                @click.stop="clearProfileImage"
+                class="absolute -right-2 -top-2 z-20 rounded-full bg-black p-1.5 text-white shadow hover:bg-black/80"
+                aria-label="Remove image"
+                title="Remove image"
+              >
+                <X class="h-4 w-4" />
+              </button>
             </div>
+
             <div class="space-y-1">
-              <h4 class="text-sm font-bold text-slate-800">Profile Image</h4>
-              <p class="text-xs text-slate-500 leading-relaxed">
-                JPG, PNG or GIF. Max size 10MB.<br />Click the circle to upload.
+              <h4 class="text-sm font-semibold text-black">Profile Image</h4>
+              <p class="text-xs text-black/50 leading-relaxed">
+                JPG or PNG. Click to upload or replace.
               </p>
             </div>
           </div>
 
+          <!-- Step 1 fields -->
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Full Name</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Full Name
+              </Label>
               <Input
                 v-model="form.full_name"
                 placeholder="Enter name"
-                class="h-11 bg-slate-50/50 border-slate-200"
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
               />
             </div>
+
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Username</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Username
+              </Label>
               <Input
                 v-model="form.username"
-                placeholder="johndoe"
-                class="h-11 bg-slate-50/50 border-slate-200"
+                :disabled="!canEditUsername"
+                placeholder="username"
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
+                :class="{ 'opacity-60 cursor-not-allowed': !canEditUsername }"
               />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Email Address</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Email Address
+              </Label>
               <Input
                 v-model="form.email"
                 type="email"
                 :disabled="mode === 'edit'"
                 placeholder="name@company.com"
-                class="h-11 bg-slate-50/50 border-slate-200"
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
               />
             </div>
+
             <div v-if="mode === 'create'" class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Initial Password</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Initial Password
+              </Label>
               <Input
                 v-model="form.password"
                 type="password"
-                class="h-11 bg-slate-50/50 border-slate-200"
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
               />
             </div>
           </div>
         </div>
 
+        <!-- Step 2 -->
         <div
           v-if="currentStep === 2"
           class="space-y-6 animate-in slide-in-from-right-4 duration-300"
         >
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label
-                class="text-[10px] font-black uppercase text-slate-400 tracking-widest text-indigo-600"
-                >Office Location</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Office Location
+              </Label>
               <select
                 v-model="form.office_id"
-                class="flex h-11 w-full rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm"
+                :disabled="!canEditOffice"
+                class="flex h-11 w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black"
+                :class="{ 'opacity-60 cursor-not-allowed': !canEditOffice }"
               >
                 <option value="0" disabled>Select Office</option>
                 <option v-for="office in offices" :key="office.id" :value="office.id">
@@ -375,13 +455,16 @@ const handleSave = async () => {
                 </option>
               </select>
             </div>
+
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Role Type</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Role Type
+              </Label>
               <select
                 v-model="form.role"
-                class="flex h-11 w-full rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm"
+                :disabled="!canEditRole"
+                class="flex h-11 w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black"
+                :class="{ 'opacity-60 cursor-not-allowed': !canEditRole }"
               >
                 <option value="staff">Staff Member</option>
                 <option value="admin">Administrator</option>
@@ -391,86 +474,91 @@ const handleSave = async () => {
 
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Phone Number</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Phone Number
+              </Label>
               <Input
                 v-model="form.phone"
-                placeholder="+1..."
-                class="h-11 bg-slate-50/50 border-slate-200"
+                placeholder="+855..."
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
               />
             </div>
+
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Gender</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Gender
+              </Label>
               <div class="flex gap-4 items-center h-11">
-                <label class="flex items-center gap-2 text-sm font-medium"
-                  ><input
+                <label class="flex items-center gap-2 text-sm font-medium text-black">
+                  <input
                     type="radio"
                     v-model="form.gender"
                     value="male"
-                    class="accent-indigo-600 w-4 h-4"
+                    class="accent-black w-4 h-4"
                   />
-                  Male</label
-                >
-                <label class="flex items-center gap-2 text-sm font-medium"
-                  ><input
+                  Male
+                </label>
+                <label class="flex items-center gap-2 text-sm font-medium text-black">
+                  <input
                     type="radio"
                     v-model="form.gender"
                     value="female"
-                    class="accent-indigo-600 w-4 h-4"
+                    class="accent-black w-4 h-4"
                   />
-                  Female</label
-                >
+                  Female
+                </label>
               </div>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Join Date</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Join Date
+              </Label>
               <Input
                 type="date"
                 v-model="form.join_date"
-                class="h-11 bg-slate-50/50 border-slate-200"
+                :disabled="!canEditJoinDate"
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
+                :class="{ 'opacity-60 cursor-not-allowed': !canEditJoinDate }"
               />
             </div>
+
             <div class="grid gap-2">
-              <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-                >Date of Birth</Label
-              >
+              <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+                Date of Birth
+              </Label>
               <Input
                 type="date"
                 v-model="form.date_of_birth"
-                class="h-11 bg-slate-50/50 border-slate-200"
+                class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
               />
             </div>
           </div>
 
           <div class="grid gap-2">
-            <Label class="text-[10px] font-black uppercase text-slate-400 tracking-widest"
-              >Residential Address</Label
-            >
+            <Label class="text-[10px] font-semibold uppercase text-black/50 tracking-wider">
+              Residential Address
+            </Label>
             <Input
               v-model="form.address"
               placeholder="Enter full address"
-              class="h-11 bg-slate-50/50 border-slate-200"
+              class="h-11 bg-white border-black/15 focus-visible:ring-0 focus-visible:border-black"
             />
           </div>
         </div>
       </div>
 
+      <!-- Footer -->
       <DialogFooter
-        class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between sm:justify-between"
+        class="p-6 bg-white border-t border-black/10 flex items-center justify-between sm:justify-between"
       >
         <Button
           v-if="currentStep > 1"
           variant="ghost"
           @click="currentStep--"
-          class="text-slate-500 font-bold hover:bg-transparent"
+          class="text-black/70 font-semibold hover:bg-transparent"
         >
           <ChevronLeft class="w-4 h-4 mr-1" /> Previous
         </Button>
@@ -480,15 +568,16 @@ const handleSave = async () => {
           <Button
             variant="outline"
             @click="handleOpenChange(false)"
-            class="border-slate-200 font-bold"
-            >Cancel</Button
+            class="border-black/15 text-black font-semibold hover:bg-black/5"
           >
+            Cancel
+          </Button>
 
           <Button
             v-if="currentStep < totalSteps"
             @click="currentStep++"
             :disabled="!isStep1Valid"
-            class="bg-indigo-600 hover:bg-indigo-700 font-bold min-w-[120px]"
+            class="bg-black text-white hover:bg-black/90 font-semibold min-w-[120px]"
           >
             Continue <ChevronRight class="w-4 h-4 ml-1" />
           </Button>
@@ -497,7 +586,7 @@ const handleSave = async () => {
             v-else
             @click="handleSave"
             :disabled="isLoading"
-            class="bg-emerald-600 hover:bg-emerald-700 font-bold min-w-[140px] gap-2"
+            class="bg-black text-white hover:bg-black/90 font-semibold min-w-[140px] gap-2"
           >
             <template v-if="isLoading">
               <Loader2 class="w-4 h-4 animate-spin" /> Saving...

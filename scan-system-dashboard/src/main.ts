@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './assets/styles/index.css'
+import 'vue-sonner/style.css' // Import vue-sonner styles
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './features/auth/store/authStore'

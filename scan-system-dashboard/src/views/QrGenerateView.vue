@@ -68,9 +68,8 @@ const refreshData = async () => {
 </script>
 
 <template>
-  <!-- Fixed height container that fits within the layout without scrolling -->
   <div
-    class="lg:h-[calc(100vh-8rem)] overflow-hidden bg-white rounded-xl border border-slate-200 shadow-xl ring-1 ring-slate-900/5"
+    class="container lg:h-[calc(100vh-8rem)] mx-auto p-4 md:p-8 animate-in fade-in duration-500 overflow-hidden bg-white rounded-xl border border-slate-200 shadow-xl ring-1 ring-slate-900/5"
   >
     <!-- Grid layout -->
     <div class="grid grid-cols-1 lg:grid-cols-2 h-full gap-0">
