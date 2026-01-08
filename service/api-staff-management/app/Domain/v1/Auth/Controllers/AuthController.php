@@ -11,11 +11,20 @@ class AuthController extends Controller
 {
     public function verify(Request $request)
     {
-        // validate request
-        $credentials = $request->validate([
-            'email' => 'required|email',
+        // Validate request - accept identifier (username or email)
+        $validated = $request->validate([
+            'identifier' => 'required|string',
             'password' => 'required|string',
         ]);
+
+        // Determine if identifier is email or username
+        $fieldType = filter_var($validated['identifier'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        
+        // Build credentials array for authentication
+        $credentials = [
+            $fieldType => $validated['identifier'],
+            'password' => $validated['password'],
+        ];
 
         // Attempt Authentication
         // Auth::once() checks the DB but does NOT create a Laravel session cookie
@@ -32,7 +41,7 @@ class AuthController extends Controller
 
         // Fail
         return response()->json([
-            'message' => 'Invalid staff credentials'
+            'message' => 'Invalid credentials'
         ], 401);
     }
 
@@ -57,6 +66,7 @@ class AuthController extends Controller
                 'phone',
                 'address',
                 'profile_image',
+                'date_of_birth',
                 'shift_start',
                 'shift_end'
             )

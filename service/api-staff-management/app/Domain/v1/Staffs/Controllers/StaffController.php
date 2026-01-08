@@ -145,6 +145,13 @@ class StaffController extends Controller
 
             $isAdmin = $currentUser->hasRole('admin');
 
+            if (!$isAdmin && $staff->user_id !== $currentUser->id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You can only update your own profile'
+                ], 404);
+            }
+
             // 2. Handle Image Upload FIRST (outside transaction for better performance)
             if ($request->hasFile(Staff::PROFILE_IMAGE)) {
                 $oldImageUrl = $staff->profile_image; // Store for cleanup
