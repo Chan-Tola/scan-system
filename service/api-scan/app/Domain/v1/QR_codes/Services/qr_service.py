@@ -30,10 +30,14 @@ def generate_qr_code_image(data: str, size: int = 10, border: int = 4) -> str:
 def generate_qr_code_for_office(
     office_id: int, 
     office_name: str, 
-    office_public_ip: str = None
+    office_public_ip: str = None,
+    qr_token: str = None
 ) -> Tuple[str, str, str]:
     """Orchestrates token generation and image creation"""
-    qr_token = generate_unique_token()
+    # If token is provided, use it; otherwise generate a new one
+    if qr_token is None:
+        qr_token = generate_unique_token()
+    
     qr_data = {
         "token": qr_token,
         "office_id": office_id,

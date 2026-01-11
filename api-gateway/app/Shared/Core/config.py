@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
 
+    # CORS Configuration
+    CORS_ORIGINS: str = ""  # Comma-separated list of allowed origin
+
     # 7 Days in seconds
     SESSION_EXPIRY: int = 604800
     

@@ -9,8 +9,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Domain\v1\Staffs\Models\Staff;
+use App\Domain\v1\Attendances\Models\Attendance;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class User extends Authenticatable 
+class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles;
 
@@ -19,7 +21,7 @@ class User extends Authenticatable
 
     const TABLENAME = 'users';
     const ID = 'id';
-    const USERNAME= 'username';
+    const USERNAME = 'username';
     const EMAIL = 'email';
     const PASSWORD =  'password';
     const REMEMBER_TOKEN = 'remember_token';
@@ -47,5 +49,10 @@ class User extends Authenticatable
     public function staff(): HasOne
     {
         return $this->hasOne(Staff::class);
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
     }
 }

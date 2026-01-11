@@ -3,10 +3,6 @@ import type { QRCodeResponse, GenerateQRCodeResponse, GenerateQRCodeRequest } fr
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
-  // headers: {
-  //   // This header tells ngrok to skip the warning page
-  //   'ngrok-skip-browser-warning': 'true',
-  // },
 })
 
 export const qrGenerateApi = {

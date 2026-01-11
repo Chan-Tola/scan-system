@@ -10,7 +10,7 @@ export type SidebarItem = {
 export const mainItems: SidebarItem[] = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Generate QR', url: '/qr-generate', icon: QrCode },
-  { title: 'Scan QR', url: '/scan-qr', icon: ScanLine },
+  { title: 'Attendance', url: '/attendance', icon: ScanLine },
 ]
 
 export const managementItems: SidebarItem[] = [

@@ -34,6 +34,21 @@ services:
       - attendance_network
 
   # -------------------
+  # Nginx (IP Forwarding Only)
+  # -------------------
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80" # Main entry point
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - attendance_network
+  # -------------------
   # API Gateway Service
   # -------------------
   api-gateway:
@@ -42,8 +57,8 @@ services:
     container_name: api-gateway
     env_file:
       - ./api-gateway/.env
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       - redis
       - postgres

@@ -35,13 +35,78 @@ class ReverseProxy:
         # IMPORTANT: Keep cookie header - Laravel Sanctum needs it for authentication
         # The cookie header contains the session cookie that Sanctum uses
         
+        # ENHANCED: Get real client IP (handles Docker, proxies, etc.)
+        def get_client_ip(request: Request) -> str:
+            """
+            Extract the real client IP address, even behind Docker/proxies.
+            Priority:
+            1. Parse X-Forwarded-For chain and find first public IP
+            2. X-Real-IP header (if public)
+            3. request.client.host (fallback)
+            
+            Returns the first public IP found, or the last IP in chain if no public IP exists.
+            """
+            # Parse X-Forwarded-For chain (format: "client_ip, proxy1_ip, proxy2_ip, ...")
+            # The leftmost IP is the original client, rightmost is the last proxy
+            forwarded_for = request.headers.get("x-forwarded-for", "")
+            if forwarded_for:
+                # Split by comma and process each IP (left to right = client to proxies)
+                ip_list = [ip.strip() for ip in forwarded_for.split(",")]
+                
+                # Strategy: Find the FIRST public IP in the chain
+                # This is typically the client's real public IP (NAT gateway IP)
+                for ip in ip_list:
+                    # Skip empty or invalid IPs
+                    if not ip or ip == "unknown":
+                        continue
+                    # Skip Docker/internal/private IPs
+                    if not ip.startswith(("172.", "10.", "192.168.", "127.", "localhost")):
+                        print(f"🔍 Found public IP in X-Forwarded-For chain: {ip}")
+                        return ip
+                
+                # If no public IP found, use the leftmost (original client) IP
+                # This handles cases where client is on local network
+                if ip_list and ip_list[0]:
+                    print(f"🔍 No public IP in chain, using leftmost IP: {ip_list[0]}")
+                    return ip_list[0]
+            
+            # Check X-Real-IP header (set by nginx)
+            real_ip = request.headers.get("x-real-ip", "")
+            if real_ip and real_ip != "unknown":
+                # Prefer public IPs, but accept private IPs as fallback
+                if not real_ip.startswith(("172.", "10.", "192.168.", "127.", "localhost")):
+                    print(f"🔍 Found public IP in X-Real-IP: {real_ip}")
+                    return real_ip
+                else:
+                    print(f"🔍 X-Real-IP is private: {real_ip}")
+                    return real_ip
+            
+            # Fallback to direct connection IP
+            client_host = request.client.host if request.client else "unknown"
+            print(f"🔍 Fallback to request.client.host: {client_host}")
+            
+            return client_host
+                
+        client_ip = get_client_ip(request)
+        
+        # DEBUG: Log the captured IP address
+        print(f"🔍 Captured Client IP: {client_ip}")
+        print(f"   Request from: {request.client.host if request.client else 'unknown'}")
+        print(f"   X-Forwarded-For: {request.headers.get('x-forwarded-for', 'not set')}")
+        
         # Security: Add proper forwarding headers
-        cleaned["X-Real-IP"] = request.client.host if request.client else "unknown"
-        cleaned["X-Forwarded-For"] = request.client.host if request.client else "unknown" # tell laravel who request and include the IP of user
-        cleaned["X-Forwarded-Proto"] = request.url.scheme # tell laravel the user from http or https
-        cleaned["X-Forwarded-Host"] = request.headers.get("host", "unknown") # tell laravel where user come from domain
+        cleaned["X-Real-IP"] = client_ip
+        cleaned["X-Forwarded-For"] = client_ip  # Send real public IP to backend
+        cleaned["X-Forwarded-Proto"] = request.url.scheme # tell backend if user from http or https
+        cleaned["X-Forwarded-Host"] = request.headers.get("host", "unknown") # tell backend where user come from domain
+        
+        # IMPORTANT: Forward authenticated user_id to backend services
+        # The AuthMiddleware stores user_id in request.state.user_id
+        if hasattr(request.state, "user_id"):
+            cleaned["X-User-ID"] = str(request.state.user_id)
         
         return cleaned
+
 
     def _validate_path(self, path: str) -> bool:
         """Security: Validate path to prevent path traversal attacks"""

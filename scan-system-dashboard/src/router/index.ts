@@ -43,6 +43,20 @@ const router = createRouter({
       component: () => import('@/views/StaffView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
+    // Attendance Scan
+    {
+      path: '/attendance',
+      name: 'attendance',
+      component: () => import('@/views/ScanAttendanceView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
+    // Check-in Confirmation
+    {
+      path: '/check-in-confirm/:qrToken/:office',
+      name: 'check-in-confirm',
+      component: () => import('@/views/CheckInConfirmView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
     // Settings
     {
       path: '/setting',

@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from app.Shared.Middleware.auth_middleware import AuthMiddleware
 from app.Shared.Infra.reverse_proxy import proxy_handler, proxy_handler_staff
 from app.Shared.Core.limiter import limiter
+from app.Shared.Core.config import settings
 
 # Import routers
 from app.Domain.v1.Auth.route_auth import router as auth_router
@@ -43,12 +44,18 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Middlewares
+if settings.CORS_ORIGINS:
+    allow_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
+else:
+    # Development fallback
+    allow_origins = [
+        "http://localhost:5173",
+        "http://192.168.18.119:5173",
+        "https://192.168.18.119:5173",
+    ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "https://unreconsidered-tiresomely-kimberlee.ngrok-free.dev"
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

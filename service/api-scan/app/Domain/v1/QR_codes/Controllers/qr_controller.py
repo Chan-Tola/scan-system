@@ -166,8 +166,9 @@ class QRCodeService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, f"Office {qr_code.office_id} not found")
         
         # Regenerate QR code image from stored token and office info
+        # CRITICAL: Use the EXISTING token from database, not generate a new one
         _, qr_data_json, qr_image = generate_qr_code_for_office(
-            office.id, office.name, office.public_ip
+            office.id, office.name, office.public_ip, qr_token=qr_code.qr_token
         )
         
         return f"data:image/png;base64,{qr_image}"
