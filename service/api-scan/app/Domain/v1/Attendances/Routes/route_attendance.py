@@ -12,7 +12,10 @@ from app.Domain.v1.Attendances.Schemas.attendance_schema import (
     CheckOutResponse,
     QRValidationRequest,
     QRValidationResponse,
-    PublicIpResponse
+    PublicIpResponse,
+    AttendanceResponse,
+    PermissionResponse,
+    PermissionRequest
 )
 
 router = APIRouter(tags=["Attendance"])
@@ -61,10 +64,6 @@ def extract_real_ip(request: Request) -> Optional[str]:
     
     print("DEBUG: No IP could be extracted from headers")
     return None
-
-@router.get("/")
-async def get_all_scans():
-    return {"service": "API Scan Service that it is working", "status": "active"}
 
 @router.get("/get-public-ip", response_model=PublicIpResponse)
 async def get_public_ip():
@@ -139,8 +138,6 @@ def validate_qr_code(
         )
     
     return AttendanceService.validate_qr_code(db, request)
-
-# ==================== Check-In ====================
 
 @router.post("/check-in", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
 def check_in(
@@ -231,3 +228,68 @@ def check_out(
         )
     
     return AttendanceService.check_out(db, user_id, request)
+
+@router.post("/permission-request", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
+def submit_permission_request(
+    request: PermissionRequest,
+    http_request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+        Submit Permission request for absence
+        _ No IP Validation  required ( can be submitted from anywhere )
+        _ Create attendance recoard with status 'absent'
+        _ Requires auth ( user_id from header )
+    """
+
+    # Extract user_id from API Gateway header
+    user_id = http_request.headers.get("X-User-ID")
+
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not authenticated. X-User-ID header missing."
+        )
+
+    try: 
+        user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
+    
+    # Call service to create permission request
+    return AttendanceService.create_permission_request(db, user_id, request)
+
+#  Get Attendance  For Staff after Login
+@router.get("/today-attendance", response_model=AttendanceResponse, status_code=status.HTTP_200_OK)
+def get_today_attendance(
+    http_request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Get today's attendance record for the authenticated user
+    
+    - Returns attendance if exists
+    - Returns 404 if no attendance found for today
+    - Used to check if user is checked in (for showing check-out button)
+    """
+    # Extract user_id from API Gateway header
+    user_id = http_request.headers.get("X-User-ID")
+    
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not authenticated. X-User-ID header missing."
+        )
+    
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
+    
+    return AttendanceService.get_today_attendance(db, user_id)

@@ -57,6 +57,13 @@ const router = createRouter({
       component: () => import('@/views/CheckInConfirmView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
+    // Check-out Confirmation
+    {
+      path: '/check-out-confirm',
+      name: 'check-out-confirm',
+      component: () => import('@/views/CheckOutConfirmView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
     // Settings
     {
       path: '/setting',

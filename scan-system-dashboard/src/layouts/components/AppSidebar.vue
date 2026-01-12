@@ -9,6 +9,7 @@ import {
   SidebarMenuItem,
   SidebarGroupLabel,
   SidebarGroupContent,
+  useSidebar,
 } from '@/components/ui/sidebar'
 
 import { useRouter, useRoute } from 'vue-router'
@@ -24,9 +25,18 @@ import { mainItems, managementItems } from '@/layouts/stores/sidebar.menu'
 const router = useRouter()
 const route = useRoute()
 
-// Navigate helper
+// Sidebar state
+const { isMobile, setOpenMobile } = useSidebar()
+
+// Navigate helper - close sidebar on mobile after navigation
 const go = (url: string) => {
-  if (url && url !== '#') router.push(url)
+  if (url && url !== '#') {
+    router.push(url)
+    // Close sidebar on mobile devices after navigation
+    if (isMobile.value) {
+      setOpenMobile(false)
+    }
+  }
 }
 
 // Active state (supports nested routes: /setting/account marks /setting active)

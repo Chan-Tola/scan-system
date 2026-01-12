@@ -4,6 +4,9 @@ import type {
   CheckInResponse,
   PermissionRequest,
   QRValidationRequest,
+  CheckOutRequest,
+  CheckOutResponse,
+  TodayAttendanceResponse,
 } from '../types/index'
 import { getPublicIp } from '../utils/getPublicIp'
 
@@ -50,15 +53,30 @@ export const attendanceApi = {
   },
 
   /**
-   * Submit permission request
-   * Endpoint: POST /api/scan/permission-request
-   * Note: Backend endpoint needs to be implemented
+   * Check out from office
+   * Endpoint: POST /api/scan/check-out
    */
-  //   submitPermission: async (data: PermissionRequest): Promise<void> => {
-  //     // TODO: Implement backend endpoint for permission requests
-  //     const response = await axios.post(`${API_BASE}/permission-request`, data, {
-  //       withCredentials: true,
-  //     })
-  //     return response.data
-  //   },
+  checkOut: async (data: CheckOutRequest): Promise<CheckOutResponse> => {
+    const response = await api.post<CheckOutResponse>('/api/scan/check-out', data)
+    return response.data
+  },
+
+  /**
+   * Get today's attendance for current user
+   * Endpoint: GET /api/scan/today-attendance
+   */
+  getTodayAttendance: async (): Promise<TodayAttendanceResponse> => {
+    const response = await api.get<TodayAttendanceResponse>('/api/scan/today-attendance')
+    return response.data
+  },
+
+  /**
+   * Submit permission request for absence
+   * Endpoint: POST /api/scan/permission-request
+   * No IP validation - can be submitted from anywhere
+   */
+  submitPermission: async (data: PermissionRequest): Promise<PermissionRequest> => {
+    const response = await api.post<PermissionRequest>('/api/scan/permission-request', data)
+    return response.data
+  },
 }

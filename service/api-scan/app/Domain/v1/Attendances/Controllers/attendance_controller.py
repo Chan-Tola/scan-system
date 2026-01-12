@@ -14,9 +14,12 @@ from app.Domain.v1.Attendances.Schemas.attendance_schema import (
     CheckOutRequest,
     CheckOutResponse,
     AttendanceResponse,
+    AttendanceReasonResponse,  # Added this!
     QRValidationRequest,
     QRValidationResponse,
-    OfficeInfo    
+    OfficeInfo,
+    PermissionRequest,
+    PermissionResponse
 )
 
 class AttendanceService:
@@ -41,6 +44,7 @@ class AttendanceService:
                 detail=f"Office {office_id} not found"
             )
         return office
+    
     @staticmethod
     def _calculate_minutes_late(check_in: dt_time, shift_start: dt_time) -> int:
         """Calculate how many minutes late the user is"""
@@ -363,3 +367,163 @@ class AttendanceService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to check out: {str(e)}"
             )
+    
+    @staticmethod
+    def get_today_attendance(db: Session, user_id: int) -> AttendanceResponse:
+        """ Get today's attendance record for the user """
+        try:
+            # Get today's attendance
+            today = date.today()
+            attendance = db.query(Attendance).filter(
+                Attendance.user_id == user_id,
+                Attendance.log_date == today
+            ).first()
+
+            if not attendance:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No attendance record found for today"
+                )
+
+            # Get office information
+            office = AttendanceService._get_office_or_404(db, attendance.office_id)
+
+            # Format response
+            return AttendanceResponse(
+                id=attendance.id,
+                user_id=attendance.user_id,
+                office_id=attendance.office_id,
+                log_date=attendance.log_date,
+                check_in=attendance.check_in,
+                check_out=attendance.check_out,
+                status=attendance.status,
+                minutes_late=attendance.minutes_late,
+                work_hours=attendance.work_hours,
+                created_at=attendance.created_at,
+                updated_at=attendance.updated_at,
+                office=OfficeInfo(
+                    id=office.id,
+                    name=office.name,
+                    public_ip=office.public_ip
+                ),
+                attendance_reasons=[]
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get today's attendance: {str(e)}"
+            )
+    
+    @staticmethod
+    def create_permission_request(db: Session, user_id: int, request: PermissionRequest) -> PermissionResponse:
+        """
+            Create permission request for the user
+            No IP validate - can be submitted from anywhere
+        """
+
+        try:
+            from zoneinfo import ZoneInfo
+            phnom_penh_tz = ZoneInfo("Asia/Phnom_Penh")
+            now = datetime.now(phnom_penh_tz)
+
+            # Pare date string to date object
+            request_date = datetime.strptime(request.date, '%Y-%m-%d').date()
+
+            # Check if request date is today or in the post
+            existing = db.query(Attendance).filter(
+                Attendance.user_id == user_id,
+                Attendance.log_date == request_date
+            ).first()
+
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Attendance record already exists for {request.date}" 
+                )
+            
+            # Create attendance record
+            attendance = Attendance(
+                user_id=user_id,
+                office_id=None,  # No office for absence
+                log_date=request_date,
+                check_in=None,   # No check-in for absence
+                check_out=None,
+                status='absent',
+                minutes_late=0,
+                work_hours=None,
+                created_at=now,
+                updated_at=now
+            )
+
+            db.add(attendance)
+            db.flush() # Get attendance id withiout commiting
+
+            # Create attendance reason record
+            attendance_reason = AttendanceReason(
+                attendance_id=attendance.id,
+                reason_type=request.reason_type, # Absent
+                reason=request.reason,
+                created_at=now,
+                updated_at=now
+            )
+
+            db.add(attendance_reason)
+            db.commit()
+            db.refresh(attendance)
+            db.refresh(attendance_reason)
+
+            # Build Reponse
+            attendance_response = AttendanceResponse(
+                id=attendance.id,
+                user_id=attendance.user_id,
+                office_id=attendance.office_id,
+                log_date=attendance.log_date,
+                check_in=attendance.check_in,
+                check_out=attendance.check_out,
+                status=attendance.status,
+                minutes_late=attendance.minutes_late,
+                work_hours=attendance.work_hours,
+                created_at=attendance.created_at,
+                updated_at=attendance.updated_at,
+                office=None,
+                attendance_reasons=[AttendanceReasonResponse(
+                    id=attendance_reason.id,
+                    attendance_id=attendance_reason.attendance_id,
+                    reason_type=attendance_reason.reason_type,
+                    reason=attendance_reason.reason,
+                    created_at=attendance_reason.created_at,
+                    updated_at=attendance_reason.updated_at
+                )]
+            )
+
+            reason_response = AttendanceReasonResponse(
+                id=attendance_reason.id,
+                attendance_id=attendance_reason.attendance_id,
+                reason_type=attendance_reason.reason_type,
+                reason=attendance_reason.reason,
+                created_at=attendance_reason.created_at,
+                updated_at=attendance_reason.updated_at
+            )
+            
+            return PermissionResponse(
+                message=f"Absence request submitted for {request.date}",
+                attendance=attendance_response,
+                attendance_reason=reason_response
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            db.rollback()
+            print(f"Error creating permission request: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create permission request: {str(e)}"
+            )
+
+
+
+

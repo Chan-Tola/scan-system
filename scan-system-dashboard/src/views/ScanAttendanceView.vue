@@ -1,27 +1,56 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import OfficeCard from '@/features/scan/components/AttendanceCard.vue'
-// import PermissionRequestDialog from '@/features/scan/components/PermissionRequestDialog.vue'
 import QrScannerDialog from '@/features/scan/components/QrScannerDialog.vue'
-import { QrCode, Hand } from 'lucide-vue-next'
+import PermissionRequestDialog from '@/features/scan/components/PermissionRequestDialog.vue'
+import { QrCode, Hand, LogOut } from 'lucide-vue-next'
 import { useAttendance } from '@/features/scan/composables/useAttendance'
 import { useAttendanceStore } from '@/features/scan/store/attendanceStore'
+import { attendanceApi } from '@/features/scan/services/attendanceApi'
+import type { TodayAttendanceResponse } from '@/features/scan/types'
+import { toast } from 'vue-sonner'
 
 const router = useRouter()
 const showQrScanner = ref(false)
-// const showPermissionDialog = ref(false)
+const showPermissionDialog = ref(false)
+const todayAttendance = ref<TodayAttendanceResponse | null>(null)
+const isLoadingAttendance = ref(false)
 
 const openQrScanner = () => {
   showQrScanner.value = true
 }
 
-// const openPermissionDialog = () => {
-//   showPermissionDialog.value = true
-// }
+const openPermissionDialog = () => {
+  showPermissionDialog.value = true
+}
+
+const handlePermissionSuccess = () => {
+  toast.success('Request submitted successfully!')
+}
 
 const { handleQrScan, isLoading } = useAttendance()
 const attendanceStore = useAttendanceStore()
+
+// Check for active attendance session
+const checkTodayAttendance = async () => {
+  isLoadingAttendance.value = true
+  try {
+    const response = await attendanceApi.getTodayAttendance()
+    // If user is checked in but not checked out, redirect to check-out page
+    if (response && response.check_in && !response.check_out) {
+      router.push({ name: 'check-out-confirm' })
+      return
+    } else {
+      todayAttendance.value = null
+    }
+  } catch (error: any) {
+    // If no attendance found (404) or other error, don't show check-out card
+    todayAttendance.value = null
+  } finally {
+    isLoadingAttendance.value = false
+  }
+}
 
 // Pre-fetch public IP when page loads (performance optimization)
 // This avoids delay when scanning - IP is ready before user scans
@@ -30,12 +59,18 @@ onMounted(() => {
     // Non-critical error - will fetch when scanning if this fails
     console.warn('Failed to pre-fetch public IP:', error)
   })
+
+  // Check for active attendance
+  checkTodayAttendance()
+})
+
+// Re-check attendance when page becomes active (e.g., after navigation back)
+onActivated(() => {
+  checkTodayAttendance()
 })
 
 // Handle QR scan success with API integration
 const handleQrScanSuccess = async (qrData: string) => {
-  console.log('QR Code scanned:', qrData)
-
   // Parse JSON if QR contains JSON object
   let qrToken: string
 
@@ -88,7 +123,7 @@ const handleQrScanSuccess = async (qrData: string) => {
         title="Scan Attendance"
         description="Open scanner to check-in/out staff."
         :icon="QrCode"
-        :disabled="isLoading"
+        :disabled="isLoading || isLoadingAttendance"
         @click="openQrScanner"
       />
 
@@ -96,16 +131,18 @@ const handleQrScanSuccess = async (qrData: string) => {
         title="Ask Permission Stop"
         description="Request permission and add a reason."
         :icon="Hand"
-        :disabled="isLoading"
+        :disabled="isLoading || isLoadingAttendance"
+        @click="openPermissionDialog"
       />
 
-      <!-- Dialog components -->
+      <!-- QR Dialog components -->
       <QrScannerDialog v-model:open="showQrScanner" @scan-success="handleQrScanSuccess" />
 
-      <!-- <PermissionRequestDialog
+      <!-- Permission Dialog components -->
+      <PermissionRequestDialog
         v-model:open="showPermissionDialog"
-        @submit="handlePermissionSubmit"
-      /> -->
+        @submit="handlePermissionSuccess"
+      />
     </section>
   </main>
 </template>

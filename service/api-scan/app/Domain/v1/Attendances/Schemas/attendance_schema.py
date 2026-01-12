@@ -2,6 +2,12 @@ from pydantic import BaseModel, Field, ConfigDict, validator
 from typing import Optional
 from datetime import datetime, date, time
 
+# Public IP Response
+class PublicIpResponse(BaseModel):
+    ip: Optional[str] = None
+    success: bool
+    message: Optional[str] = None
+
 # Office info for nested response
 class OfficeInfo(BaseModel):
     id:int
@@ -16,31 +22,7 @@ class UserInfo(BaseModel):
     email:str
     model_config = ConfigDict(from_attributes=True)
 
-# Request Schemas
-class QRValidationRequest(BaseModel):
-    qr_token: str = Field(..., description="QR code token to validate")
-    client_ip: Optional[str] = Field(None, description="Client IP Address (can be extracted from request)")
-
-    @validator('qr_token')
-    def validate_qr_token(cls, v):
-        if not v or len(v.strip()) == 0:
-            raise ValueError('qr_token is required')
-        return v.strip()
-
-# Check-In Request
-class CheckInRequest(BaseModel):
-    qr_token: str = Field(..., description="QR code token for check in")
-    client_ip: Optional[str] = Field(None, description="Client IP Address (can be provided by client)")
-    @validator('qr_token')
-    def validate_qr_token(cls, v):
-        if not v or len(v.strip())== 0:
-            raise ValueError('qr_token is required')
-        return v.strip()
-
-# check out Request after finish check in
-# Last Request after finish check out( for addding reason after check-in )
-
-# Response Schemas
+# Attendance Response Schemas
 class AttendanceResponse(BaseModel):
     id: int
     user_id: int
@@ -72,8 +54,35 @@ class AttendanceReasonResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
+# QR Validate Request Schemas
+class QRValidationRequest(BaseModel):
+    qr_token: str = Field(..., description="QR code token to validate")
+    client_ip: Optional[str] = Field(None, description="Client IP Address (can be extracted from request)")
 
-# check in
+    @validator('qr_token')
+    def validate_qr_token(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError('qr_token is required')
+        return v.strip()
+
+# QR Validation Response
+class QRValidationResponse(BaseModel):
+    valid: bool
+    message: str
+    office: Optional[OfficeInfo] = None
+
+
+# Check-In Request
+class CheckInRequest(BaseModel):
+    qr_token: str = Field(..., description="QR code token for check in")
+    client_ip: Optional[str] = Field(None, description="Client IP Address (can be provided by client)")
+    @validator('qr_token')
+    def validate_qr_token(cls, v):
+        if not v or len(v.strip())== 0:
+            raise ValueError('qr_token is required')
+        return v.strip()
+
+# Check In Response
 class CheckInResponse(BaseModel):
     message: str
     attendance: AttendanceResponse
@@ -93,14 +102,41 @@ class CheckOutResponse(BaseModel):
     work_hours: float
     is_early_leave: bool
 
-# QR Validation Response
-class QRValidationResponse(BaseModel):
-    valid: bool
-    message: str
-    office: Optional[OfficeInfo] = None
+# Permission Request (for absence)
+class PermissionRequest(BaseModel):
+    date: str = Field(..., description="Date of absence (YYYY-MM-DD format)")
+    reason_type: str = Field(..., description="Type: absent")
+    reason: str = Field(..., min_length=10, max_length=500, description="Detailed reason for absence")
+    
+    @validator('date')
+    def validate_date(cls, v):
+        # Parse string date to date object
+        try:
+            parsed_date = datetime.strptime(v, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError('Date must be in YYYY-MM-DD format')
+        
+        # Date must be today or future
+        if parsed_date < date.today():
+            raise ValueError('Date cannot be in the past')
+        
+        return v  # Return original string format
+    
+    @validator('reason_type')
+    def validate_reason_type(cls, v):
+        # Only accept 'absent' from frontend
+        if v != 'absent':
+            raise ValueError('reason_type must be "absent"')
+        return v
+    
+    @validator('reason')
+    def validate_reason(cls, v):
+        if not v or len(v.strip()) < 10:
+            raise ValueError('Reason must be at least 10 characters')
+        return v.strip()
 
-# Public IP Response
-class PublicIpResponse(BaseModel):
-    ip: Optional[str] = None
-    success: bool
-    message: Optional[str] = None
+# Permission Response
+class PermissionResponse(BaseModel):
+    message: str
+    attendance: AttendanceResponse
+    attendance_reason: AttendanceReasonResponse
