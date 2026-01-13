@@ -139,7 +139,7 @@ class ReverseProxy:
         # Security: Clean headers
         headers = self._clean_headers(dict(request.headers), request)
 
-                # IMPORTANT: tell Laravel this is an API request
+        # IMPORTANT: tell Laravel this is an API request
         if "accept" not in headers or not headers.get("accept"):
             headers["Accept"] = "application/json"
 
@@ -208,29 +208,102 @@ class ReverseProxy:
                             media_type=response_content_type
                         )
 
-            # PATH 2: Standard Requests (GET, JSON POST, etc.) - Simple pass-through
+            # PATH 2: GET requests (Excel downloads, images, etc.) - Use streaming for performance
+            elif request.method == "GET":
+                # First, peek at headers to determine response type
+                async with self.client.stream(
+                    method=request.method,
+                    url=target_url,
+                    params=dict(request.query_params),
+                    headers=headers,
+                    follow_redirects=True
+                ) as response:
+                    # Get headers first (available immediately)
+                    resp_headers = dict(response.headers)
+                    resp_headers.pop("server", None)
+                    resp_headers.pop("x-powered-by", None)
+                    
+                    response_content_type = response.headers.get("content-type", "").lower()
+                    is_json_response = "application/json" in response_content_type
+                    is_excel_file = (
+                        "application/vnd.openxmlformats-officedocument" in response_content_type or
+                        "application/vnd.ms-excel" in response_content_type or
+                        response.headers.get("content-disposition", "").startswith("attachment")
+                    )
+                    is_image_response = "image/" in response_content_type
+                    is_binary_file = (
+                        is_excel_file or
+                        "application/pdf" in response_content_type or
+                        "application/octet-stream" in response_content_type or
+                        is_image_response
+                    )
+                    
+                    if is_binary_file and not is_json_response:
+                        # For binary files, create a generator that opens its own connection
+                        # This keeps the connection alive while streaming
+                        async def binary_stream():
+                            async with self.client.stream(
+                                method=request.method,
+                                url=target_url,
+                                params=dict(request.query_params),
+                                headers=headers,
+                                follow_redirects=True
+                            ) as stream_response:
+                                total_size = 0
+                                async for chunk in stream_response.aiter_bytes():
+                                    total_size += len(chunk)
+                                    if total_size > self.max_response_size:
+                                        raise ValueError("Response too large")
+                                    yield chunk
+                        
+                        return StreamingResponse(
+                            binary_stream(),
+                            status_code=response.status_code,
+                            headers=resp_headers,
+                            media_type=response_content_type
+                        )
+                    else:
+                        # Buffer JSON responses (small, safe to load)
+                        content = await response.aread()
+                        if len(content) > self.max_response_size:
+                            return Response(
+                                content='{"error": "Response too large"}',
+                                status_code=413,
+                                media_type="application/json"
+                            )
+                        
+                        return Response(
+                            content=content,
+                            status_code=response.status_code,
+                            headers=resp_headers,
+                            media_type=response_content_type
+                        )
+
+            # PATH 3: POST/PUT/PATCH requests (JSON, small uploads) - Use standard request
             else:
                 # forward query parameters
                 query_params = dict(request.query_params)
                 
                 # Security: Validate request body size before reading
-                if request.method in ["POST", "PUT", "PATCH"]:
-                    content_length = request.headers.get("content-length")
-                    if content_length and int(content_length) > self.max_request_size:
-                        return Response(
-                            content='{"error": "Request body too large"}',
-                            status_code=413,
-                            media_type="application/json"
-                        )
-                    body = await request.body()
-                    if len(body) > self.max_request_size:
-                        return Response(
-                            content='{"error": "Request body too large"}',
-                            status_code=413,
-                            media_type="application/json"
-                        )
-                else:
-                    body = None
+                content_length = request.headers.get("content-length")
+                if content_length:
+                    try:
+                        if int(content_length) > self.max_request_size:
+                            return Response(
+                                content='{"error": "Request body too large"}',
+                                status_code=413,
+                                media_type="application/json"
+                            )
+                    except (ValueError, TypeError):
+                        pass  # Invalid content-length, check body size instead
+                
+                body = await request.body()
+                if len(body) > self.max_request_size:
+                    return Response(
+                        content='{"error": "Request body too large"}',
+                        status_code=413,
+                        media_type="application/json"
+                    )
 
                 response = await self.client.request(
                     method=request.method,

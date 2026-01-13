@@ -19,7 +19,6 @@ class Attendance extends Model
     const CHECK_IN = 'check_in';
     const CHECK_OUT = 'check_out';
     const STATUS = 'status';
-    const NOTES = 'notes';
     const OFFICE_ID = 'office_id';
     const MINUTES_LATE = 'minutes_late';
     const WORK_HOURS = 'work_hours';
@@ -30,7 +29,6 @@ class Attendance extends Model
         self::CHECK_IN,
         self::CHECK_OUT,
         self::STATUS,
-        self::NOTES,
         self::OFFICE_ID,
         self::MINUTES_LATE,
         self::WORK_HOURS,

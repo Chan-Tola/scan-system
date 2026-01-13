@@ -17,6 +17,7 @@ from app.Domain.v1.Scan.route_scan import router as scan_router
 from app.Domain.v1.Staff.route_staff import router as staff_router
 from app.Domain.v1.Offices.route_office import router as office_router
 from app.Domain.v1.QR_codes.route_generate import router as generate_router
+from app.Domain.v1.Attendance_Records.route_attendance_record import router as attendance_record_router
 
 # Prepare Logger for Error
 logger = structlog.get_logger()
@@ -85,10 +86,17 @@ app.include_router(
     prefix="/api/offices",
     tags=["Office Management"]
 ) 
+
 app.include_router(
     generate_router,
     prefix="/api/generate-code", 
     tags=["Code Generate"]
+)
+
+app.include_router(
+    attendance_record_router,
+    prefix="/api/attendance-records",
+    tags=["History Management"]
 )
 
 # Root Health Check (សម្រាប់ Docker/Kubernetes)

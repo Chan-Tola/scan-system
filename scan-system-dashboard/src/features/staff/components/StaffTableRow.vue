@@ -14,6 +14,7 @@ import {
 import { MoreVertical, ChevronDown, Trash2, Pencil, Eye, Clock, KeyRound } from 'lucide-vue-next'
 import type { StaffMember } from '../types'
 
+
 const props = defineProps<{
   user: StaffMember
 }>()
@@ -34,6 +35,29 @@ const formattedDate = computed(() => {
     day: 'numeric',
   })
 })
+
+
+// Helper function to format time from "08:00:00" to "8:00 AM" or "17:00" to "5:00 PM"
+const formatTimeForDisplay = (time: string | undefined): string => {
+  if (!time) return ''
+
+  // Split by colon and extract hours and minutes
+  const parts = time.split(':')
+  if (parts.length < 2 || !parts[0] || !parts[1]) return time
+
+  let hours = parseInt(parts[0], 10)
+  const minutes = parts[1]
+
+  if (isNaN(hours)) return time
+
+  // Determine AM/PM
+  const period = hours >= 12 ? 'PM' : 'AM'
+
+  // Convert to 12-hour format (0 -> 12, 13 -> 1, etc.)
+  hours = hours % 12 || 12
+
+  return `${hours}:${minutes} ${period}`
+}
 
 const roleBadgeClass = computed(() => {
   const base = 'font-medium px-2 py-0.5 text-xs'
@@ -108,12 +132,6 @@ const roleBadgeClass = computed(() => {
   <TableRow v-if="user.expanded" class="bg-slate-50/50 shadow-inner">
     <TableCell colspan="8" class="p-6">
       <div class="bg-white p-4 rounded-xl border grid grid-cols-2 gap-4">
-        <div>
-          <p class="text-[10px] font-bold text-slate-400 uppercase">Shift</p>
-          <div class="flex items-center gap-2 text-sm">
-            <Clock class="h-4 w-4" /> {{ user.shift }}
-          </div>
-        </div>
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase">Location</p>
           <p class="text-sm">{{ user.office_name }}</p>

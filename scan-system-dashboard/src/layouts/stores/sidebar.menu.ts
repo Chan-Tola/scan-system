@@ -1,4 +1,4 @@
-import { Home, QrCode, ScanLine, Building2, Users, Settings } from 'lucide-vue-next'
+import { Home, QrCode, ScanLine, Building2, Users, Settings, History } from 'lucide-vue-next'
 // roles?: Array<'admin' | 'staff'>
 
 export type SidebarItem = {
@@ -16,6 +16,7 @@ export const mainItems: SidebarItem[] = [
 export const managementItems: SidebarItem[] = [
   { title: 'Office Management', url: '/office', icon: Building2 },
   { title: 'Staff Members', url: '/staff', icon: Users },
+  { title: 'Attendance Records', url: '/attendance-records', icon: History },
 ]
 
 export const settingItems: SidebarItem[] = [{ title: 'Settings', url: '/setting', icon: Settings }]

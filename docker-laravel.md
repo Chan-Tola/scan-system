@@ -29,3 +29,4 @@ make:request: Create a new form request class
 docker-compose exec api-staff-management php artisan optimize:clear
 
 docker exec -it api-staff-management php artisan make:migration add_office_id_to_attendances_table
+

@@ -22,6 +22,12 @@ const router = createRouter({
       component: () => import('@/views/DashboardView.vue'),
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
+    {
+      path: '/attendance-records',
+      name: 'attendance-records',
+      component: () => import('@/views/HistoryView.vue'),
+      meta: { layout: 'MainLayout', requiresAuth: true },
+    },
     // office
     {
       path: '/office',
